@@ -17,48 +17,6 @@ require 'active_support'
 require 'active_support/time'
 require 'active_support/core_ext'
 
-module Log4r
-  
-  class EvernoteOutputter < Outputter
-    
-    def initialize(_name, hash = {})
-      super(_name, hash)
-      validate(hash)
-    end
-    
-    # validation of evernote parameters
-    def validate(hash)
-      @env = hash[:env] || hash['env'] || 'sandbox'
-      if @env != 'sandbox' && @env != 'production'
-        raise ArgumentError, "Must evernote environment 'sandbox' or 'production'" 
-      end
-    end
-    
-    def canonical_log(logevent)
-      synch {
-        
-        
-        
-      }
-    end
-    
-    
-    
-  end
-  
-end
-
-
 module Log4ever
   VERSION = '0.0.1'
 end
-
-# module Log4ever
-  # include Log4r
-  # VERSION = '0.0.1'
-  # class Logger < Log4r::Logger
-    # def add(*_outputters)
-      # super(*_outputters)
-    # end
-  # end
-# end
