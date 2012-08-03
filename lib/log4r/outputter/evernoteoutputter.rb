@@ -15,6 +15,9 @@ module Log4r
 
     # validation of evernote parameters
     def validate(hash)
+      set_maxsize(hash) # for rolling
+      set_maxtime(hash) # for rolling
+
       env = hash[:env] || hash['env'] || 'sandbox'
       if env == 'sandbox'
         @env = "https://#{SANDBOX_HOST}/edam/user"
@@ -25,99 +28,101 @@ module Log4r
       end
       @auth_token = hash[:auth_token] || hash['auth_token'] || ""
       raise ArgumentError, "Must specify from auth token" if @auth_token.empty?
-      @notebook = hash[:notebook] || hash['notebook'] || ""
-      raise ArgumentError, "Must specify from notebook" if @notebook.empty?
-      @tags = hash[:tags] || hash['tags'] || []
-      @stack = hash[:stack] || hash['stack']
-      @evernote = EvernoteRegister.new(@env, @auth_token)
+      @evernote = MyEvernote.new(@env, @auth_token)
+      notebook = hash[:notebook] || hash['notebook'] || ""
+      raise ArgumentError, "Must specify from notebook" if notebook.empty?
+      #@tags = hash[:tags] || hash['tags'] || []
+      tags = @evernote.get_tags(hash[:tags] || hash['tags'] || [])
+      stack = hash[:stack] || hash['stack']
+      @evernote = MyEvernote.new(@env, @auth_token)
+      @notebook = @evernote.get_notebook(notebook, stack)
+      @note = @evernote.get_note(@notebook)
+      @tags = tags.map{|tag_obj| tag_obj.guid}
     end
 
-    def canonical_log(logevent)
-      synch { create_note(format(logevent)) }
+    def canonical_log(logevent); super end
+
+    def write(content)
+      @content = content
+      if note_size_requires_roll? || time_requires_roll? || @note.size == 0
+        p "create"
+        create_log
+      else
+        p "update"
+        update_log
+      end
     end
 
-    def create_note(content)
+    private
+    def create_log
+      @note.clear
+      @note.title = @name + " - " + Time.now.strftime("%Y-%m-%d %H:%M:%S")
+      @note.tags = @tags
+      @note.content = @content
+      @note.create
+      Logger.log_internal { "Create note: #{@note.guid}" }
+    end
+    
+    def update_log
+      @note.addContent(@content)
+      @note.update
+      Logger.log_internal { "Update note: #{@note.guid}" }
+    end
+    
+    # more expensive, only for startup
+    def note_size_requires_roll?
+      @maxsize > 0 && @note.size >= @maxsize
+    end
+
+    def time_requires_roll?
       # TODO
-      # 存在しないノート、Stackの場合、raise
-      #
-      @evernote.add_note({
-        :notebook => @notebook,
-        :stack => @stack,
-        :content => content,
-        :tags => ['Log']
-      })
-      
     end
 
-    
+    def set_maxsize(options)
+      if options.has_key?(:maxsize) || options.has_key?('maxsize')
+        maxsize = options[:maxsize] || options['maxsize']
+
+        multiplier = 1
+        if (maxsize =~ /\d+KB/)
+          multiplier = 1024
+        elsif (maxsize =~ /\d+MB/)
+          multiplier = 1024 * 1024
+        elsif (maxsize =~ /\d+GB/)
+          multiplier = 1024 * 1024 * 1024
+        end
+
+        _maxsize = maxsize.to_i * multiplier
+
+        if _maxsize.class != Fixnum and _maxsize.class != Bignum
+          raise TypeError, "Argument 'maxsize' must be an Fixnum", caller
+        end
+        if _maxsize == 0
+          raise TypeError, "Argument 'maxsize' must be > 0", caller
+        end
+        @maxsize = _maxsize
+      else
+        @maxsize = 0
+      end
+    end
+
+    def set_maxtime(options)
+      if options.has_key?(:maxtime) || options.has_key?('maxtime')
+        _maxtime = (options[:maxtime] or options['maxtime']).to_i
+        if _maxtime.class != Fixnum
+          raise TypeError, "Argument 'maxtime' must be an Fixnum", caller
+        end
+        if _maxtime == 0
+          raise TypeError, "Argument 'maxtime' must be > 0", caller
+        end
+        @maxtime = _maxtime
+        @startTime = Time.now
+      else
+        @maxtime = 0
+        @startTime = 0
+      end
+    end
 
   end
-  
-  class EvernoteRegister
-    def initialize(env, auth_token)
-      @auth_token = auth_token
-      userStoreTransport = Thrift::HTTPClientTransport.new(env)
-      userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
-      user_store = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
-      noteStoreUrl = user_store.getNoteStoreUrl(@auth_token)
-      noteStoreTransport = Thrift::HTTPClientTransport.new(noteStoreUrl)
-      noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
-      @note_store = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
-    end
-    
-    def add_note(params)
-      # TODO　パフォーマンス的にもっとよくしたい。例えば毎回get_noteするのはやめる。
-      
-      
-      
-      # 検索条件
-      filter = Evernote::EDAM::NoteStore::NoteFilter.new
-      filter.order = Evernote::EDAM::Type::NoteSortOrder::CREATED
-      filter.notebookGuid = get_notebook_guid(params[:notebook], params[:stack])
-      filter.timeZone = "Asia/Tokyo"
-      filter.ascending = false # descending
-      # ノート取得
-      note_list = @note_store.findNotes(@auth_token, filter, 0, 1)
-      note = note_list.notes[0] || Evernote::EDAM::Type::Note.new
-      note.title = to_ascii("test") if note.title.nil?
-      content = @note_store.getNoteContent(@auth_token, note.guid)
-      note.content = create_content(content, params[:content])
-      note.notebookGuid  = get_notebook_guid(params[:notebook], params[:stack])
-      note.tagGuids = get_tag_guid(params[:tags])
-      @note_store.updateNote(@auth_token, note)
-    end
-    
-    def get_notebook_guid(notebook_name, stack_name = nil)
-      notebook_name = to_ascii(notebook_name)
-      stack_name = to_ascii(stack_name)
-      @note_store.listNotebooks(@auth_token).each do |notebook|
-        if notebook.name == notebook_name && notebook.stack == stack_name
-          return notebook.guid
-        end
-      end
-    end
-    
-    def create_content(xml_str, log_content)
-      xml = Nokogiri::XML(xml_str)
-      content = xml.at("en-note").inner_html + "<div style=\"font-family:'Courier New'\"><![CDATA[#{log_content}]]></div>"
-      xml.at("en-note").inner_html = content
-      to_ascii(xml.to_s)
-    end
-    
-    def get_tag_guid(tag_list)
-      return if tag_list.empty?
-      tag_list.map!{|tag| to_ascii(tag)}
-      @note_store.listTags(@auth_token).each_with_object [] do |tag, list|
-        if tag_list.include? tag.name
-          list << tag.guid
-        end
-      end
-    end
-    
-    def to_ascii(str)
-      str.force_encoding("ASCII-8BIT") unless str.nil?
-    end
-  end
-  
-  
+
+
 end
