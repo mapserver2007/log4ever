@@ -4,6 +4,7 @@ GEM
     active_support (3.0.0)
       activesupport (= 3.0.0)
     activesupport (3.0.0)
+    log4r (1.1.10)
     nokogiri (1.5.5)
 
 PLATFORMS
@@ -11,4 +12,5 @@ PLATFORMS
 
 DEPENDENCIES
   active_support
+  log4r
   nokogiri
