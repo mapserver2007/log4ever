@@ -2,6 +2,9 @@
 require 'nokogiri'
 require 'log4r/outputter/outputter'
 require "log4r/staticlogger"
+require 'active_support'
+require 'active_support/time'
+require 'active_support/core_ext'
 
 module Log4r
   class EvernoteOutputter < Outputter
@@ -16,7 +19,7 @@ module Log4r
     # validation of evernote parameters
     def validate(hash)
       set_maxsize(hash) # for rolling
-      set_maxtime(hash) # for rolling
+      set_shift_age(hash) # for roling
 
       env = hash[:env] || hash['env'] || 'sandbox'
       if env == 'sandbox'
@@ -31,7 +34,6 @@ module Log4r
       @evernote = MyEvernote.new(@env, @auth_token)
       notebook = hash[:notebook] || hash['notebook'] || ""
       raise ArgumentError, "Must specify from notebook" if notebook.empty?
-      #@tags = hash[:tags] || hash['tags'] || []
       tags = @evernote.get_tags(hash[:tags] || hash['tags'] || [])
       stack = hash[:stack] || hash['stack']
       @evernote = MyEvernote.new(@env, @auth_token)
@@ -44,11 +46,9 @@ module Log4r
 
     def write(content)
       @content = content
-      if note_size_requires_roll? || time_requires_roll? || @note.size == 0
-        p "create"
+      if note_size_requires_roll? || time_requires_roll?
         create_log
       else
-        p "update"
         update_log
       end
     end
@@ -71,11 +71,11 @@ module Log4r
     
     # more expensive, only for startup
     def note_size_requires_roll?
-      @maxsize > 0 && @note.size >= @maxsize
+      @note.size == 0 || (@maxsize > 0 && @note.size >= @maxsize)
     end
 
     def time_requires_roll?
-      # TODO
+      !@endTime.nil? && Time.now.to_i >= @endTime
     end
 
     def set_maxsize(options)
@@ -121,8 +121,36 @@ module Log4r
         @startTime = 0
       end
     end
-
+    
+    def set_shift_age(options)
+      if options.has_key?(:shift_age) || options.has_key?('shift_age')
+        _shift_age = (options[:shift_age] or options['shift_age']).to_i
+        if _shift_age.class != Fixnum
+          raise TypeError, "Argument 'shift_age' must be an Fixnum", caller
+        end
+        unless _shift_age.nil?
+          unless [Log4ever::ShiftAge::DAILY, Log4ever::ShiftAge::WEEKLY,
+              Log4ever::ShiftAge::MONTHLY].include? _shift_age
+            raise TypeError, "Argument 'shift_age' must be > 0", caller
+          end
+          
+          now = Time.now
+          case _shift_age
+          when Log4ever::ShiftAge::DAILY
+            tomorrow = Time.local(now.tomorrow.year, now.tomorrow.month, now.tomorrow.day)
+            @endTime = tomorrow.to_i
+          when Log4ever::ShiftAge::WEEKLY
+            next_week = Time.local(now.next_week.year, now.next_week.month, now.next_week.day)
+            @endTime = next_week.to_i
+          when Log4ever::ShiftAge::MONTHLY
+            next_month = Time.local(now.next_month.year, now.next_month.month, now.next_month.day)
+            @endTime = next_month.to_i
+          else
+            raise TypeError, "Argument 'shift_age' must be '1' or '2' or '3'", caller
+          end
+        end
+      end
+    end
   end
-
 
 end

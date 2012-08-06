@@ -13,13 +13,15 @@ require "Evernote/EDAM/user_store"
 require "Evernote/EDAM/user_store_constants.rb"
 require "Evernote/EDAM/note_store"
 require "Evernote/EDAM/limits_constants.rb"
-require 'active_support'
-require 'active_support/time'
-require 'active_support/core_ext'
 
 module Log4ever
   VERSION = '0.0.1'
   class TypeError < StandardError; end
+  module ShiftAge
+    DAILY = 1
+    WEEKLY = 2
+    MONTHLY = 3
+  end
 end
 
 module Log4r
@@ -62,6 +64,7 @@ module Log4r
       @@note_store.listTags(@@auth_token).each do |tag|
         return tag if tag_name == tag.name
       end
+      nil
     end
 
     def to_ascii(str)
@@ -104,20 +107,8 @@ module Log4r
         raise NoMethodError, '#{@notebook.class} do not has method: guid', caller
       end
       getNote
-      
-      #filter = Evernote::EDAM::NoteStore::NoteFilter.new
-      #filter.order = Evernote::EDAM::Type::NoteSortOrder::UPDATE_SEQUENCE_NUMBER
-      #filter.notebookGuid = @notebook.guid
-      #filter.timeZone = "Asia/Tokyo"
-      #filter.ascending = false # descending
-      #note_list = @@note_store.findNotes(@@auth_token, filter, 0, 1)
-      #@note = note_list.notes[0] || Evernote::EDAM::Type::Note.new
-      #@note.notebookGuid = @notebook.guid
     end
     
-    # get note object
-    #def get; @note end
-
     # content size
     def size
       content.bytesize > 0 ? content.bytesize - XML_TEMPLATE_BYTE : 0
@@ -129,13 +120,11 @@ module Log4r
     # set new title
     def title=(str)
       @params[:title] = to_ascii(str)
-      #@note.title = to_ascii(str)
     end
 
     # set tags
     def tags=(list)
       @params[:tagGuids] = list
-      #@note.tagGuids = list
     end
 
     # append content
@@ -156,7 +145,7 @@ module Log4r
     # create note
     def create
       @@note_store.createNote(@@auth_token, createNote)
-      getNote
+      clear
     end
 
     # update note
@@ -167,33 +156,30 @@ module Log4r
     # clear note object
     def clear
       @params = {}
-      @note = nil
+      @note = @content_ = @content_xml = nil
       initialize(@notebook)
     end
     
-    private
     def getNote
       filter = Evernote::EDAM::NoteStore::NoteFilter.new
-      filter.order = Evernote::EDAM::Type::NoteSortOrder::UPDATED
+      filter.order = Evernote::EDAM::Type::NoteSortOrder::CREATED
       filter.notebookGuid = @notebook.guid
       filter.timeZone = "Asia/Tokyo"
       filter.ascending = false # descending
       note_list = @@note_store.findNotes(@@auth_token, filter, 0, 1)
-      raise "Note not found at #{@notebook.guid}" if note_list.notes.empty? 
-      @note = note_list.notes[0]
+      if note_list.notes.empty?
+        Logger.log_internal { "Note not found at #{@notebook.guid}" }
+        @note = Evernote::EDAM::Type::Note.new
+      else  
+        @note = note_list.notes[0]
+      end
+      @note
     end
     
     # create note object
     def createNote
       @note = Evernote::EDAM::Type::Note.new
       @note.notebookGuid = @notebook.guid
-      
-      # FIXME
-      # ここになにか問題あるかも。
-      # ローテートの瞬間、新規にノートが作成されそこにログが記録されるはずだが、
-      # なぜか一つ前のノートが引き継がれている。
-      
-      
       @params.each{|method, value| @note.send("#{method.to_s}=", value)}
       @note
     end
