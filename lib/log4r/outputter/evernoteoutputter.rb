@@ -104,23 +104,6 @@ module Log4r
         @maxsize = 0
       end
     end
-
-    def set_maxtime(options)
-      if options.has_key?(:maxtime) || options.has_key?('maxtime')
-        _maxtime = (options[:maxtime] or options['maxtime']).to_i
-        if _maxtime.class != Fixnum
-          raise TypeError, "Argument 'maxtime' must be an Fixnum", caller
-        end
-        if _maxtime == 0
-          raise TypeError, "Argument 'maxtime' must be > 0", caller
-        end
-        @maxtime = _maxtime
-        @startTime = Time.now
-      else
-        @maxtime = 0
-        @startTime = 0
-      end
-    end
     
     def set_shift_age(options)
       if options.has_key?(:shift_age) || options.has_key?('shift_age')

@@ -15,7 +15,7 @@ require "Evernote/EDAM/note_store"
 require "Evernote/EDAM/limits_constants.rb"
 
 module Log4ever
-  VERSION = '0.0.1'
+  VERSION = '0.0.2'
   class TypeError < StandardError; end
   module ShiftAge
     DAILY = 1
