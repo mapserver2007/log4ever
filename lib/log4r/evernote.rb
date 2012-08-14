@@ -66,7 +66,7 @@ module Log4r
       tag_name = to_ascii(tag_name)
       @@note_store.listTags(@@auth_token).each do |tag|
         if tag_name == tag.name
-          Logger.log_internal { "Create tag: #{tag_name}" }
+          Logger.log_internal { "Get tag: #{tag_name}" }
           return tag
         end
       end

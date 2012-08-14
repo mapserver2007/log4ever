@@ -66,6 +66,7 @@ module Log4r
     # update log in note
     def update_log(content)
       @note.addContent(content)
+      @note.tags = @tags
       @note.update
       Logger.log_internal { "Update note: #{@note.guid}" }
     end
