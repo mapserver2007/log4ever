@@ -7,7 +7,7 @@ log4ever is simple logger for evernote. It is available as an extension of [log4
     require 'log4r/evernote'
 
     logger = Log4r::Logger.new("Evernote")
-    logger.outputters = Log4r::StdoutOutputter.new('console')
+    logger.level = Log4r::INFO
     formatter = Log4r::PatternFormatter.new(
         :pattern => "%d %C[%l]: %M ",
         :date_format => "%Y/%m/%d %H:%M:%Sm"
@@ -32,7 +32,15 @@ Output:
 
     2012-08-06 21:12:31 Evernote[INFO]: log output
 
-The output results are stored in Evernote.
+The output results are stored in Evernote.  
+
+###ChangeLog
+* 0.0.1
+First release.
+* 0.0.2
+Remove unnecessary processing.
+* 0.0.3
+If tag, notebook does not exist, it will be created.
 
 ##License
 Licensed under the MIT

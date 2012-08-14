@@ -15,7 +15,7 @@ require "Evernote/EDAM/note_store"
 require "Evernote/EDAM/limits_constants.rb"
 
 module Log4ever
-  VERSION = '0.0.2'
+  VERSION = '0.0.3'
   class TypeError < StandardError; end
   module ShiftAge
     DAILY = 1
@@ -28,6 +28,7 @@ module Log4r
   include Log4ever
   class MyEvernote
     @@note_store = nil
+    
     def initialize(env, auth_token)
       if @@note_store.nil?
         @env = env
@@ -54,7 +55,9 @@ module Log4r
     
     # get registerd tag list
     def get_tags(tag_names)
-      tag_names.map{|tag_name| get_tag(tag_name)}
+      tag_names.map do |tag_name|
+        get_tag(tag_name) || create_tag(tag_name)
+      end
     end
 
     # get registered tag object
@@ -62,11 +65,24 @@ module Log4r
       return if tag_name.empty?
       tag_name = to_ascii(tag_name)
       @@note_store.listTags(@@auth_token).each do |tag|
-        return tag if tag_name == tag.name
+        if tag_name == tag.name
+          Logger.log_internal { "Create tag: #{tag_name}" }
+          return tag
+        end
       end
       nil
     end
+    
+    # create tag object
+    def create_tag(tag_name)
+      tag = Evernote::EDAM::Type::Tag.new
+      tag.name = tag_name
+      tag_obj = @@note_store.createTag(@@auth_token, tag)
+      Logger.log_internal { "Create tag: #{tag_name}" }
+      tag_obj
+    end
 
+    # encode for evernote internal charset
     def to_ascii(str)
       str.force_encoding("ASCII-8BIT") unless str.nil?
     end
@@ -75,16 +91,37 @@ module Log4r
   class Notebook < MyEvernote
     def initialize(notebook_name, stack_name)
       return unless @notebook.nil?
+      get(notebook_name, stack_name) || create(notebook_name, stack_name)
+    end
+    
+    # get notebook object
+    def getNotebookObject; @notebook end
+    
+    # get notebook
+    def get(notebook_name, stack_name)
       @@note_store.listNotebooks(@@auth_token).each do |notebook|
         notebook_name = to_ascii(notebook_name)
         stack_name = to_ascii(stack_name)
         if notebook.name == notebook_name && notebook.stack == stack_name
+          Logger.log_internal { "Get notebook: #{stack_name}/#{notebook_name}" }
           @notebook = notebook
           break
         end
       end
+      return @notebook
     end
-
+    
+    # create notebook
+    def create(notebook_name, stack_name)
+      notebook = Evernote::EDAM::Type::Notebook.new
+      notebook.name = notebook_name
+      notebook.stack = stack_name
+      @notebook = @@note_store.createNotebook(@@auth_token, notebook)
+      Logger.log_internal { "Create notebook: #{stack_name}/#{notebook_name}" }
+      @notebook
+    end
+  
+    # notebook guid
     def guid; @notebook.guid end
 
     # clear notebook object
@@ -108,6 +145,9 @@ module Log4r
       end
       getNote
     end
+    
+    # get note object
+    def getNoteObject; @note end
     
     # content size
     def size
