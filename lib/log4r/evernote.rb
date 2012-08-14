@@ -108,7 +108,7 @@ module Log4r
           break
         end
       end
-      return @notebook
+      @notebook
     end
     
     # create notebook

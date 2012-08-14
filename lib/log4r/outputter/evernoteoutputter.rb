@@ -76,12 +76,12 @@ module Log4r
       @note.size == 0 || (@maxsize > 0 && @note.size >= @maxsize)
     end
 
-  # whether or not to rotate rolling
+    # whether or not to rotate rolling
     def time_requires_roll?
       !@endTime.nil? && Time.now.to_i >= @endTime
     end
   
-  # max amount of log in note
+    # max amount of log in note
     def set_maxsize(options)
       if options.has_key?(:maxsize) || options.has_key?('maxsize')
         maxsize = options[:maxsize] || options['maxsize']
@@ -109,7 +109,7 @@ module Log4r
       end
     end
     
-  # rolling interval
+    # rolling interval
     def set_shift_age(options)
       if options.has_key?(:shift_age) || options.has_key?('shift_age')
         _shift_age = (options[:shift_age] or options['shift_age']).to_i
