@@ -41,6 +41,8 @@ First release.
 Remove unnecessary processing.
 * 0.0.3
 If tag, notebook does not exist, it will be created.
+* 0.0.4
+Add dependency gem.
 
 ##License
 Licensed under the MIT
