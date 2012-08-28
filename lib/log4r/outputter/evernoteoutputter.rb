@@ -18,9 +18,6 @@ module Log4r
 
     # validation of evernote parameters
     def validate(hash)
-      set_maxsize(hash) # for rolling
-      set_shift_age(hash) # for roling
-
       env = hash[:env] || hash['env'] || 'sandbox'
       if env == 'sandbox'
         @env = "https://#{SANDBOX_HOST}/edam/user"
@@ -40,6 +37,8 @@ module Log4r
       @notebook = @evernote.get_notebook(notebook, stack)
       @note = @evernote.get_note(@notebook)
       @tags = tags.map{|tag_obj| tag_obj.guid}
+      set_maxsize(hash) # for rolling
+      set_shift_age(hash) # for rolling
     end
 
     def canonical_log(logevent); super end
@@ -76,7 +75,7 @@ module Log4r
       @note.size == 0 || (@maxsize > 0 && @note.size >= @maxsize)
     end
 
-    # whether or not to rotate rolling
+    # whether or not to rotate
     def time_requires_roll?
       !@endTime.nil? && Time.now.to_i >= @endTime
     end
@@ -121,16 +120,16 @@ module Log4r
               Log4ever::ShiftAge::MONTHLY].include? _shift_age
             raise TypeError, "Argument 'shift_age' must be > 0", caller
           end
-          now = Time.now
+          created_at = @note.created_at
           case _shift_age
           when Log4ever::ShiftAge::DAILY
-            tomorrow = Time.local(now.tomorrow.year, now.tomorrow.month, now.tomorrow.day)
+            tomorrow = Time.local(created_at.tomorrow.year, created_at.tomorrow.month, created_at.tomorrow.day)
             @endTime = tomorrow.to_i
           when Log4ever::ShiftAge::WEEKLY
-            next_week = Time.local(now.next_week.year, now.next_week.month, now.next_week.day)
+            next_week = Time.local(created_at.next_week.year, created_at.next_week.month, created_at.next_week.day)
             @endTime = next_week.to_i
           when Log4ever::ShiftAge::MONTHLY
-            next_month = Time.local(now.next_month.year, now.next_month.month, now.next_month.day)
+            next_month = Time.local(created_at.next_month.year, created_at.next_month.month, created_at.next_month.day)
             @endTime = next_month.to_i
           else
             raise TypeError, "Argument 'shift_age' must be '1' or '2' or '3'", caller

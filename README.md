@@ -43,6 +43,8 @@ Remove unnecessary processing.
 If tag, notebook does not exist, it will be created.
 * 0.0.4
 Add dependency gem.
+* 0.0.5
+Bug fix.
 
 ##License
 Licensed under the MIT

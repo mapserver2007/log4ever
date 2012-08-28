@@ -15,7 +15,7 @@ require "Evernote/EDAM/note_store"
 require "Evernote/EDAM/limits_constants.rb"
 
 module Log4ever
-  VERSION = '0.0.4'
+  VERSION = '0.0.5'
   class TypeError < StandardError; end
   module ShiftAge
     DAILY = 1
@@ -229,6 +229,13 @@ module Log4r
       getNote if @note.nil?
       @note.content = @params[:content]
       @note
+    end
+    
+    # get created time 
+    def created_at
+      time = @note.created.to_s
+      ut = time.slice(0, time.length - 3)
+      Time.at(ut.to_f)
     end
     
     # get note content text
