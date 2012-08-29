@@ -1,6 +1,9 @@
 #log4ever
 log4ever is simple logger for evernote. It is available as an extension of [log4r](http://log4r.rubyforge.org/).
 ***
+###Install
+    $> gem install log4ever
+
 ###Usage
     # -*- coding: utf-8 -*-
     require 'log4r'
