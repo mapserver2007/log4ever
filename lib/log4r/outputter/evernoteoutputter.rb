@@ -28,14 +28,13 @@ module Log4r
       end
       @auth_token = hash[:auth_token] || hash['auth_token'] || ""
       raise ArgumentError, "Must specify from auth token" if @auth_token.empty?
+      notebook_name = hash[:notebook] || hash['notebook'] || ""
+      stack_name = hash[:stack] || hash['stack']
+      raise ArgumentError, "Must specify from notebook" if @notebook_name.empty?
       @evernote = MyEvernote.new(@env, @auth_token)
-      notebook = hash[:notebook] || hash['notebook'] || ""
-      raise ArgumentError, "Must specify from notebook" if notebook.empty?
       tags = @evernote.get_tags(hash[:tags] || hash['tags'] || [])
-      stack = hash[:stack] || hash['stack']
-      @evernote = MyEvernote.new(@env, @auth_token)
-      @notebook = @evernote.get_notebook(notebook, stack)
-      @note = @evernote.get_note(@notebook)
+      notebook = @evernote.get_notebook(notebook_name, stack_name)
+      @note = @evernote.get_note(notebook)
       @tags = tags.map{|tag_obj| tag_obj.guid}
       set_maxsize(hash) # for rolling
       set_shift_age(hash) # for rolling
@@ -43,6 +42,7 @@ module Log4r
 
     def canonical_log(logevent); super end
 
+    # write log
     def write(content)
       if note_size_requires_roll? || time_requires_roll?
         create_log(content)
