@@ -48,6 +48,8 @@ If tag, notebook does not exist, it will be created.
 Add dependency gem.
 * 0.0.5
 Bug fix.
+* 0.0.6
+Bug fix.
 
 ##License
 Licensed under the MIT

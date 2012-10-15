@@ -29,8 +29,8 @@ module Log4r
       @auth_token = hash[:auth_token] || hash['auth_token'] || ""
       raise ArgumentError, "Must specify from auth token" if @auth_token.empty?
       notebook_name = hash[:notebook] || hash['notebook'] || ""
+      raise ArgumentError, "Must specify from notebook" if notebook_name.empty?
       stack_name = hash[:stack] || hash['stack']
-      raise ArgumentError, "Must specify from notebook" if @notebook_name.empty?
       @evernote = MyEvernote.new(@env, @auth_token)
       tags = @evernote.get_tags(hash[:tags] || hash['tags'] || [])
       notebook = @evernote.get_notebook(notebook_name, stack_name)
