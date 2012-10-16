@@ -15,6 +15,13 @@ module Log4r
       super(_name, hash)
       validate(hash)
     end
+    
+    # synchronize note
+    def sync
+      @note = @evernote.get_note(@notebook)
+      set_maxsize(@hash) # for rolling
+      set_shift_age(@hash) # for rolling
+    end
 
     # validation of evernote parameters
     def validate(hash)
@@ -33,17 +40,17 @@ module Log4r
       stack_name = hash[:stack] || hash['stack']
       @evernote = MyEvernote.new(@env, @auth_token)
       tags = @evernote.get_tags(hash[:tags] || hash['tags'] || [])
-      notebook = @evernote.get_notebook(notebook_name, stack_name)
-      @note = @evernote.get_note(notebook)
       @tags = tags.map{|tag_obj| tag_obj.guid}
-      set_maxsize(hash) # for rolling
-      set_shift_age(hash) # for rolling
+      @notebook = @evernote.get_notebook(notebook_name, stack_name)
+      @hash = hash
+      sync
     end
 
     def canonical_log(logevent); super end
 
     # write log
     def write(content)
+      sync
       if note_size_requires_roll? || time_requires_roll?
         create_log(content)
       else

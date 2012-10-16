@@ -11,6 +11,6 @@ Gem::Specification.new do |gem|
   gem.name          = "log4ever"
   gem.require_paths = ["lib"]
   gem.add_dependency('log4r', '>= 1.1.10')
-  gem.version       = '0.0.6'
+  gem.version       = '0.0.7'
 end
 
