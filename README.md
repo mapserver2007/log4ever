@@ -52,6 +52,8 @@ Bug fix.
 Bug fix.
 * 0.0.7
 Bug fix.
+* 0.0.8
+Add dependency library.
 
 ##License
 Licensed under the MIT
