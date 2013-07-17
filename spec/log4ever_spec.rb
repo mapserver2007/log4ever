@@ -4,9 +4,9 @@ require 'log4r'
 require 'log4r/evernote'
 require 'log4r/configurator'
 require File.expand_path(File.dirname(__FILE__) + '/../spec/spec_helper')
+include Log4r
 
 describe Log4ever, 'が実行する処理' do
-  include Log4r
   LOGGER_NAME = 'Log4ever'
   
   before do
