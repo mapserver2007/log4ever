@@ -1,18 +1,24 @@
 GEM
-  remote: http://rubygems.org/
+  remote: https://rubygems.org/
   specs:
     active_support (3.0.0)
       activesupport (= 3.0.0)
     activesupport (3.0.0)
+    evernote-thrift (1.25.0)
+    evernote_oauth (0.2.1)
+      evernote-thrift
+      oauth (>= 0.4.1)
     i18n (0.6.0)
     log4r (1.1.10)
     nokogiri (1.5.5)
+    oauth (0.4.7)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   active_support
+  evernote_oauth
   i18n
   log4r
   nokogiri

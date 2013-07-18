@@ -1,5 +1,6 @@
-source :rubygems
+source 'https://rubygems.org'
 gem 'log4r'
 gem 'active_support'
 gem 'i18n'
 gem 'nokogiri'
+gem 'evernote_oauth'

@@ -31,3 +31,4 @@ SCCS
 _$*
 _svn
 config/evernote.auth.yml
+.project

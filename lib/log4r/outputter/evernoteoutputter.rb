@@ -8,8 +8,8 @@ require 'active_support/core_ext'
 
 module Log4r
   class EvernoteOutputter < Outputter
-    SANDBOX_HOST = 'sandbox.evernote.com'
-    PRODUCTION_HOST = 'www.evernote.com'
+    #SANDBOX_HOST = 'sandbox.evernote.com'
+    #PRODUCTION_HOST = 'www.evernote.com'
 
     def initialize(_name, hash = {})
       super(_name, hash)
@@ -25,20 +25,14 @@ module Log4r
 
     # validation of evernote parameters
     def validate(hash)
-      env = hash[:env] || hash['env'] || 'sandbox'
-      if env == 'sandbox'
-        @env = "https://#{SANDBOX_HOST}/edam/user"
-      elsif env == 'production'
-        @env = "https://#{PRODUCTION_HOST}/edam/user"
-      else
-        raise ArgumentError, "Must specify from env 'sandbox' or 'production'"
-      end
+      is_sandbox = hash[:sandbox] || hash['sandbox'] || false
+      raise ArgumentError, "Sandbox must be type of boolean" unless is_sandbox == false || is_sandbox == true
       @auth_token = hash[:auth_token] || hash['auth_token'] || ""
       raise ArgumentError, "Must specify from auth token" if @auth_token.empty?
       notebook_name = hash[:notebook] || hash['notebook'] || ""
       raise ArgumentError, "Must specify from notebook" if notebook_name.empty?
       stack_name = hash[:stack] || hash['stack']
-      @evernote = MyEvernote.new(@env, @auth_token)
+      @evernote = MyEvernote.new(is_sandbox, @auth_token)
       tags = @evernote.get_tags(hash[:tags] || hash['tags'] || [])
       @tags = tags.map{|tag_obj| tag_obj.guid}
       @notebook = @evernote.get_notebook(notebook_name, stack_name)

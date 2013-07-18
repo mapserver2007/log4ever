@@ -19,7 +19,7 @@ log4ever is simple logger for evernote. It is available as an extension of [log4
         :formatter => formatter
     })
     evernoteOutputter = Log4r::EvernoteOutputter.new('evernote', {
-        :env => "production", # Execution environment in Evernote (production or sandbox) 
+        :sandbox => false, #  Execution environment in Evernote (true: sandbox, false: production, default: production)
         :auth_token => "xxxxxxxxxxxxxxxxxxxxxxx", # evernote auth token
         :stack => "Log4ever", # evernote stack name
         :notebook => "DevelopmentLog", # evernote notebook name

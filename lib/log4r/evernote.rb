@@ -1,21 +1,9 @@
 # -*- coding: utf-8 -*-
-$: << File.dirname(__FILE__) + "/evernote/lib"
-$: << File.dirname(__FILE__) + "/evernote/lib/thrift"
-$: << File.dirname(__FILE__) + "/evernote/lib/Evernote/EDAM"
 require 'log4r/outputter/evernoteoutputter'
-require "thrift/types"
-require "thrift/struct"
-require "thrift/protocol/base_protocol"
-require "thrift/protocol/binary_protocol"
-require "thrift/transport/base_transport"
-require "thrift/transport/http_client_transport"
-require "Evernote/EDAM/user_store"
-require "Evernote/EDAM/user_store_constants.rb"
-require "Evernote/EDAM/note_store"
-require "Evernote/EDAM/limits_constants.rb"
+require 'evernote_oauth'
 
 module Log4ever
-  VERSION = '0.0.9'
+  VERSION = '0.1.0'
   class TypeError < StandardError; end
   module ShiftAge
     DAILY = 1
@@ -29,17 +17,13 @@ module Log4r
   class MyEvernote
     @@note_store = nil
     
-    def initialize(env, auth_token)
+    def initialize(is_sandbox, auth_token)
       if @@note_store.nil?
-        @env = env
         @@auth_token = auth_token
-        userStoreTransport = Thrift::HTTPClientTransport.new(@env)
-        userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
-        user_store = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
-        noteStoreUrl = user_store.getNoteStoreUrl(@@auth_token)
-        noteStoreTransport = Thrift::HTTPClientTransport.new(noteStoreUrl)
-        noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
-        @@note_store = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
+        @@note_store = EvernoteOAuth::Client.new({
+          :token => auth_token,
+          :sandbox => is_sandbox
+        }).note_store
       end
     end
 
@@ -91,6 +75,8 @@ module Log4r
   class Notebook < MyEvernote
     def initialize(notebook_name, stack_name)
       return unless @notebook.nil?
+      @notebook_name = notebook_name
+      @stack_name = stack_name
       get(notebook_name, stack_name) || create(notebook_name, stack_name)
     end
     
@@ -127,7 +113,7 @@ module Log4r
     # clear notebook object
     def clear
       @notebook = nil
-      initialize(@env, @@auth_token)
+      initialize(@notebook_name, @stack_name)
     end
   end
 

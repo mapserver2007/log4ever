@@ -4,18 +4,17 @@ require 'log4r'
 require 'log4r/evernote'
 require 'log4r/configurator'
 require File.expand_path(File.dirname(__FILE__) + '/../spec/spec_helper')
-include Log4r
 
 describe Log4ever, 'が実行する処理' do
   LOGGER_NAME = 'Log4ever'
   
   before do
-    @formatter = PatternFormatter.new(
+    @formatter = Log4r::PatternFormatter.new(
       :pattern => "%d %C[%l]: %M ",
       :date_format => "%Y/%m/%d %H:%M:%Sm"
     )
     @params = {
-      :env => "production",
+      :sandbox => false,
       :auth_token => Log4ever::evernote_auth,
       :stack => "Log4ever",
       :notebook => "DevelopmentLog",
@@ -26,9 +25,9 @@ describe Log4ever, 'が実行する処理' do
     }
   end
 
-  let(:logger) {Logger.new(LOGGER_NAME)}
+  let(:logger) {Log4r::Logger.new(LOGGER_NAME)}
   let(:evernoteOutputter) {
-    EvernoteOutputter.new('evernote', @params)
+    Log4r::EvernoteOutputter.new('evernote', @params)
   }
 
   before do
@@ -40,9 +39,9 @@ describe Log4ever, 'が実行する処理' do
       log_content = "aaa"
       formatter_content = "\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s.*?\[.*?\]:\s(.*)\\n"
       @params[:maxsize] = 1
-      logger.outputters = EvernoteOutputter.new('evernote', @params)
+      logger.outputters = evernoteOutputter
       logger.debug(log_content)
-      @evernote = MyEvernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4r::MyEvernote.new(@params[:env], @params[:auth_token])
       @notebook = @evernote.get_notebook(@params[:notebook], @params[:stack])
       @note = @evernote.get_note(@notebook)
       write_log = @note.content_xml.children[1].children.reverse[0].text
@@ -56,27 +55,27 @@ describe Log4ever, 'が実行する処理' do
   
   describe 'Log4rの初期化処理(正常系)' do
     it 'パラメータのチェックでエラーが出ないこと' do
-      logger.outputters = EvernoteOutputter.new(LOGGER_NAME, @params)
+      logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params)
       logger.name.should == LOGGER_NAME
     end
 
     it 'XMLから読み込んだパラメータのチェックでエラーが出ないこと' do
-      Configurator.load_xml_file(@config_xml).should_not be_nil
+      Log4r::Configurator.load_xml_file(@config_xml).should_not be_nil
     end
   end
 
   describe 'Log4rの初期化処理(異常系)' do
     it "envパラメータのチェックでエラーが出ること" do
       proc {
-        logger.outputters = EvernoteOutputter.new(LOGGER_NAME, @params.merge(
-          :env => "aaa"
+        logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
+          :sandbox => "aaa"
         ))
       }.should raise_error(ArgumentError)
     end
 
     it "auth_token必須パラメータのチェックでエラーが出ること" do
       proc {
-        logger.outputters = EvernoteOutputter.new(LOGGER_NAME, @params.merge(
+        logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
           :auth_token => nil
         ))
       }.should raise_error(ArgumentError)
@@ -84,7 +83,7 @@ describe Log4ever, 'が実行する処理' do
 
     it "notebook必須パラメータのチェックでエラーが出ること" do
       proc {
-        logger.outputters = EvernoteOutputter.new(LOGGER_NAME, @params.merge(
+        logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
           :notebook => nil
         ))
       }.should raise_error(ArgumentError)
@@ -92,22 +91,30 @@ describe Log4ever, 'が実行する処理' do
   end
   
   describe 'Log4everの処理' do
-    it 'ノートブックが存在しない場合、新規作成されること' do
+    it 'ノートブックが存在しない場合、ノートブックが新規作成されること' do
       logger.outputters = evernoteOutputter
-      @evernote = MyEvernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4r::MyEvernote.new(@params[:env], @params[:auth_token])
       notebook_name = Time.now.to_i.to_s
       notebook = @evernote.get_notebook(notebook_name, @params[:stack])
       obj = notebook.get(notebook_name, @params[:stack])
       obj.name.should == notebook_name
+    end
+
+    it 'ノートブックが存在しない場合、スタックが新規作成されること' do
+      logger.outputters = evernoteOutputter
+      @evernote = Log4r::MyEvernote.new(@params[:env], @params[:auth_token])
+      notebook_name = Time.now.to_i.to_s
+      notebook = @evernote.get_notebook(notebook_name, @params[:stack])
+      obj = notebook.get(notebook_name, @params[:stack])
       obj.stack.should == @params[:stack]
     end
   
     it 'タグが存在しない場合、新規作成されること' do
       @params[:tags] = [Time.now.to_i.to_s]
       @params[:maxsize] = 1
-      logger.outputters = EvernoteOutputter.new('evernote', @params)
+      logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
       logger.debug("test")
-      evernote = MyEvernote.new(@params[:env], @params[:auth_token])
+      evernote = Log4r::MyEvernote.new(@params[:env], @params[:auth_token])
       notebook = evernote.get_notebook(@params[:notebook], @params[:stack])
       note = evernote.get_note(notebook)
       note.getNoteObject.tagGuids[0].should_not be_empty
