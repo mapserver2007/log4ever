@@ -8,8 +8,6 @@ require 'active_support/core_ext'
 
 module Log4r
   class EvernoteOutputter < Outputter
-    #SANDBOX_HOST = 'sandbox.evernote.com'
-    #PRODUCTION_HOST = 'www.evernote.com'
 
     def initialize(_name, hash = {})
       super(_name, hash)
