@@ -56,6 +56,8 @@ Bug fix.
 Add dependency library.
 * 0.0.9
 Add dependency library.
+* 0.1.0
+Change the parameter of EvetnoteOutputter class, use evernote_oauth.
 
 ##License
 Licensed under the MIT
