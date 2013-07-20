@@ -37,35 +37,6 @@ module Log4r
     def note(notebook)
       Note.new(notebook)
     end
-    
-    # get registerd tag list
-    def get_tags(tag_names)
-      tag_names.map do |tag_name|
-        get_tag(tag_name) || create_tag(tag_name)
-      end
-    end
-
-    # get registered tag object
-    def get_tag(tag_name)
-      return if tag_name.empty?
-      tag_name = to_ascii(tag_name)
-      @@note_store.listTags(@@auth_token).each do |tag|
-        if tag_name == tag.name
-          Logger.log_internal { "Get tag: #{tag_name}" }
-          return tag
-        end
-      end
-      nil
-    end
-    
-    # create tag object
-    def create_tag(tag_name)
-      tag = ::Evernote::EDAM::Type::Tag.new
-      tag.name = tag_name
-      tag_obj = @@note_store.createTag(@@auth_token, tag)
-      Logger.log_internal { "Create tag: #{tag_name}" }
-      tag_obj
-    end
 
     # encode for evernote internal charset
     def to_ascii(str)
@@ -132,6 +103,7 @@ module Log4r
       return unless @params.nil? || @params.empty?
       @params = {}
       @notebook = notebook
+      @tag = Tag.new
       if !@notebook.kind_of? ::Evernote::EDAM::Type::Notebook
         raise TypeError, "Expected kind of Notebook, got #{@notebook.class}", caller
       elsif !@notebook.respond_to? 'guid'
@@ -153,8 +125,9 @@ module Log4r
     end
 
     # set tags
-    def tags=(list)
-      @params[:tagGuids] = list
+    def tags=(names)
+      @tag.names = names
+      @params[:tagGuids] = @tag.get
     end
 
     # append content
@@ -201,13 +174,14 @@ module Log4r
       note_list = @@note_store.findNotes(@@auth_token, filter, 0, 1)
       if note_list.notes.empty?
         Logger.log_internal { "Note not found at #{@notebook.guid}" }
-        @note = Evernote::EDAM::Type::Note.new
+        @note = ::Evernote::EDAM::Type::Note.new
       else  
         @note = note_list.notes[0]
       end
       @note
     end
 
+    # get latest note object(newest object)
     def get!
       clear
       get
@@ -251,6 +225,59 @@ module Log4r
     # clear note object
     def clear
       @note = nil
+    end
+  end
+
+  class Tag < Evernote
+    def initialize; end
+
+    # set tag list
+    def names=(list)
+      @list = list
+    end
+
+    # get tag objects
+    def get
+      return if @list.nil? || @list.empty?
+      @list = [@list] unless @list.kind_of?(Array)
+      @tags = @@note_store.listTags(@@auth_token) if @tags.nil?
+      @list.map do |tag|
+        tag_obj = to_obj(tag) || create(tag)
+        tag_obj.guid
+      end
+    end
+
+    # get newest tag objects
+    def get!
+      clear
+      get
+    end
+    
+    # clear note object
+    def clear
+      @tags = nil
+    end
+
+    private
+    # create tag object
+    def create(tag_name)
+      tag = ::Evernote::EDAM::Type::Tag.new
+      tag.name = tag_name
+      tag_obj = @@note_store.createTag(@@auth_token, tag)
+      Logger.log_internal { "Create tag: #{tag_name}" }
+      tag_obj
+    end
+
+    # tag name to tag object
+    def to_obj(tag_name)
+      tag_name = to_ascii(tag_name)
+      @tags.each do |tag|
+        if tag_name == tag.name
+          Logger.log_internal { "Get tag: #{tag_name}" }
+          return tag
+        end
+      end
+      nil
     end
   end
 end

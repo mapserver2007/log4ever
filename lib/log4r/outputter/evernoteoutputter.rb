@@ -31,8 +31,7 @@ module Log4r
       raise ArgumentError, "Must specify from notebook" if notebook_name.empty?
       stack_name = hash[:stack] || hash['stack']
       @evernote = Log4r::Evernote.new(@auth_token, is_sandbox)
-      tags = @evernote.get_tags(hash[:tags] || hash['tags'] || [])
-      @tags = tags.map{|tag_obj| tag_obj.guid}
+      @tags = hash[:tags] || hash['tags'] || []
       notebook = @evernote.notebook
       @notebook = notebook.get(notebook_name, stack_name)
       @hash = hash
