@@ -16,7 +16,7 @@ module Log4r
     
     # synchronize note
     def sync
-      @note = @evernote.get_note(@notebook)
+      @note = @evernote.note(@notebook)
       set_maxsize(@hash) # for rolling
       set_shift_age(@hash) # for rolling
     end
@@ -30,10 +30,11 @@ module Log4r
       notebook_name = hash[:notebook] || hash['notebook'] || ""
       raise ArgumentError, "Must specify from notebook" if notebook_name.empty?
       stack_name = hash[:stack] || hash['stack']
-      @evernote = MyEvernote.new(is_sandbox, @auth_token)
+      @evernote = Log4r::Evernote.new(@auth_token, is_sandbox)
       tags = @evernote.get_tags(hash[:tags] || hash['tags'] || [])
       @tags = tags.map{|tag_obj| tag_obj.guid}
-      @notebook = @evernote.get_notebook(notebook_name, stack_name)
+      notebook = @evernote.notebook
+      @notebook = notebook.get(notebook_name, stack_name)
       @hash = hash
       sync
     end
@@ -137,5 +138,4 @@ module Log4r
       end
     end
   end
-
 end

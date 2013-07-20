@@ -3,7 +3,7 @@ require 'log4r/outputter/evernoteoutputter'
 require 'evernote_oauth'
 
 module Log4ever
-  VERSION = '0.1.0'
+  VERSION = '0.1.1'
   class TypeError < StandardError; end
   module ShiftAge
     DAILY = 1
@@ -14,10 +14,10 @@ end
 
 module Log4r
   include Log4ever
-  class MyEvernote
+  class Evernote
     @@note_store = nil
     
-    def initialize(is_sandbox, auth_token)
+    def initialize(auth_token, is_sandbox = false)
       if @@note_store.nil?
         @@auth_token = auth_token
         @@note_store = EvernoteOAuth::Client.new({
@@ -28,13 +28,14 @@ module Log4r
     end
 
     # get registered notebook or create new notebook
-    def get_notebook(notebook_name, stack_name)
-      Notebook.new(notebook_name, stack_name)
+    # search the notebook under the stack if stack_name specific
+    def notebook
+      Notebook.new
     end
 
     # get registered note or create new note
-    def get_note(notebook_obj)
-      Note.new(notebook_obj)
+    def note(notebook)
+      Note.new(notebook)
     end
     
     # get registerd tag list
@@ -59,7 +60,7 @@ module Log4r
     
     # create tag object
     def create_tag(tag_name)
-      tag = Evernote::EDAM::Type::Tag.new
+      tag = ::Evernote::EDAM::Type::Tag.new
       tag.name = tag_name
       tag_obj = @@note_store.createTag(@@auth_token, tag)
       Logger.log_internal { "Create tag: #{tag_name}" }
@@ -72,20 +73,19 @@ module Log4r
     end
   end
 
-  class Notebook < MyEvernote
-    def initialize(notebook_name, stack_name)
-      return unless @notebook.nil?
-      @notebook_name = notebook_name
-      @stack_name = stack_name
-      get(notebook_name, stack_name) || create(notebook_name, stack_name)
-    end
-    
-    # get notebook object
-    def getNotebookObject; @notebook end
+  class Notebook < Evernote
+    def initialize; end
     
     # get notebook
-    def get(notebook_name, stack_name)
-      @@note_store.listNotebooks(@@auth_token).each do |notebook|
+    def get(notebook_name, stack_name = nil)
+      # return cache if same notebook and stack
+      return @notebook if @notebook_name == notebook_name && @stack_name == stack_name
+      # get notebook list from evernote
+      @notebooks = @@note_store.listNotebooks(@@auth_token) if @notebooks.nil?
+      @notebook = nil 
+      @notebook_name = notebook_name
+      @stack_name = stack_name
+      @notebooks.each do |notebook|
         notebook_name = to_ascii(notebook_name)
         stack_name = to_ascii(stack_name)
         if notebook.name == notebook_name && notebook.stack == stack_name
@@ -94,12 +94,20 @@ module Log4r
           break
         end
       end
+      # create new notebook if notebook is nil
+      create(notebook_name, stack_name) if @notebook.nil?
       @notebook
+    end
+
+    # get newest notebook
+    def get!(notebook_name, stack_name = nil)
+      clear
+      get(notebook_name, stack_name)
     end
     
     # create notebook
-    def create(notebook_name, stack_name)
-      notebook = Evernote::EDAM::Type::Notebook.new
+    def create(notebook_name, stack_name = nil)
+      notebook = ::Evernote::EDAM::Type::Notebook.new
       notebook.name = notebook_name
       notebook.stack = stack_name
       @notebook = @@note_store.createNotebook(@@auth_token, notebook)
@@ -112,28 +120,24 @@ module Log4r
 
     # clear notebook object
     def clear
+      @notebooks = @@note_store.listNotebooks(@@auth_token)
       @notebook = nil
-      initialize(@notebook_name, @stack_name)
     end
   end
 
-  class Note < MyEvernote
+  class Note < Evernote
     XML_TEMPLATE_BYTE = 237
     
     def initialize(notebook)
       return unless @params.nil? || @params.empty?
       @params = {}
       @notebook = notebook
-      if !@notebook.kind_of? Notebook
-        raise TypeError, 'Expected kind of Notebook, got #{@notebook.class}', caller
+      if !@notebook.kind_of? ::Evernote::EDAM::Type::Notebook
+        raise TypeError, "Expected kind of Notebook, got #{@notebook.class}", caller
       elsif !@notebook.respond_to? 'guid'
-        raise NoMethodError, '#{@notebook.class} do not has method: guid', caller
+        raise NoMethodError, "#{@notebook.class} do not has method: guid", caller
       end
-      getNote
     end
-    
-    # get note object
-    def getNoteObject; @note end
     
     # content size
     def size
@@ -186,9 +190,11 @@ module Log4r
       initialize(@notebook)
     end
     
-    def getNote
-      filter = Evernote::EDAM::NoteStore::NoteFilter.new
-      filter.order = Evernote::EDAM::Type::NoteSortOrder::CREATED
+    # get latest note object
+    def get
+      return @note unless @note.nil?
+      filter = ::Evernote::EDAM::NoteStore::NoteFilter.new
+      filter.order = ::Evernote::EDAM::Type::NoteSortOrder::CREATED
       filter.notebookGuid = @notebook.guid
       filter.timeZone = "Asia/Tokyo"
       filter.ascending = false # descending
@@ -201,10 +207,15 @@ module Log4r
       end
       @note
     end
+
+    def get!
+      clear
+      get
+    end
     
     # create note object
     def createNote
-      @note = Evernote::EDAM::Type::Note.new
+      @note = ::Evernote::EDAM::Type::Note.new
       @note.notebookGuid = @notebook.guid
       @params.each{|method, value| @note.send("#{method.to_s}=", value)}
       @note
@@ -212,7 +223,7 @@ module Log4r
     
     # get note object
     def updateNote
-      getNote if @note.nil?
+      @note.nil? and get
       @note.content = @params[:content]
       @note
     end
@@ -227,6 +238,7 @@ module Log4r
     # get note content text
     def content
       return @content_ unless @content_.nil?
+      @note.nil? and get
       @content_ = !@note.nil? && !@note.guid.nil? ? @@note_store.getNoteContent(@@auth_token, @note.guid) : ""
     end
 
@@ -234,6 +246,11 @@ module Log4r
     def content_xml
       return @content_xml unless @content_xml.nil?
       @content_xml = Nokogiri::XML(content)
+    end
+
+    # clear note object
+    def clear
+      @note = nil
     end
   end
 end
