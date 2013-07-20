@@ -10,10 +10,7 @@ module Log4ever
     WEEKLY = 2
     MONTHLY = 3
   end
-end
 
-module Log4r
-  include Log4ever
   class Evernote
     @@note_store = nil
     
@@ -60,7 +57,7 @@ module Log4r
         notebook_name = to_ascii(notebook_name)
         stack_name = to_ascii(stack_name)
         if notebook.name == notebook_name && notebook.stack == stack_name
-          Logger.log_internal { "Get notebook: #{stack_name}/#{notebook_name}" }
+          Log4r::Logger.log_internal { "Get notebook: #{stack_name}/#{notebook_name}" }
           @notebook = notebook
           break
         end
@@ -82,7 +79,7 @@ module Log4r
       notebook.name = notebook_name
       notebook.stack = stack_name
       @notebook = @@note_store.createNotebook(@@auth_token, notebook)
-      Logger.log_internal { "Create notebook: #{stack_name}/#{notebook_name}" }
+      Log4r::Logger.log_internal { "Create notebook: #{stack_name}/#{notebook_name}" }
       @notebook
     end
   
@@ -173,7 +170,7 @@ module Log4r
       filter.ascending = false # descending
       note_list = @@note_store.findNotes(@@auth_token, filter, 0, 1)
       if note_list.notes.empty?
-        Logger.log_internal { "Note not found at #{@notebook.guid}" }
+        Log4r::Logger.log_internal { "Note not found at #{@notebook.guid}" }
         @note = ::Evernote::EDAM::Type::Note.new
       else  
         @note = note_list.notes[0]
@@ -264,7 +261,7 @@ module Log4r
       tag = ::Evernote::EDAM::Type::Tag.new
       tag.name = tag_name
       tag_obj = @@note_store.createTag(@@auth_token, tag)
-      Logger.log_internal { "Create tag: #{tag_name}" }
+      Log4r::Logger.log_internal { "Create tag: #{tag_name}" }
       tag_obj
     end
 
@@ -273,7 +270,7 @@ module Log4r
       tag_name = to_ascii(tag_name)
       @tags.each do |tag|
         if tag_name == tag.name
-          Logger.log_internal { "Get tag: #{tag_name}" }
+          Log4r::Logger.log_internal { "Get tag: #{tag_name}" }
           return tag
         end
       end

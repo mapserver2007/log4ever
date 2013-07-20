@@ -41,7 +41,7 @@ describe Log4ever, 'が実行する処理' do
       @params[:maxsize] = 1
       logger.outputters = evernoteOutputter
       logger.debug(log_content)
-      @evernote = Log4r::Evernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4ever::Evernote.new(@params[:env], @params[:auth_token])
       @notebook = @evernote.notebook
       notebook_obj = @notebook.get(@params[:notebook], @params[:stack])
       @note = @evernote.note(notebook_obj)
@@ -131,7 +131,7 @@ describe Log4ever, 'が実行する処理' do
   describe 'Log4everの処理' do
     it 'ノートブックが存在しない場合、ノートブックが新規作成されること' do
       logger.outputters = evernoteOutputter
-      @evernote = Log4r::Evernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4ever::Evernote.new(@params[:env], @params[:auth_token])
       notebook_name = Time.now.to_i.to_s
       notebook = @evernote.notebook
       obj = notebook.get(notebook_name, @params[:stack])
@@ -140,7 +140,7 @@ describe Log4ever, 'が実行する処理' do
 
     it 'ノートブックが存在しない場合、スタックが新規作成されること' do
       logger.outputters = evernoteOutputter
-      @evernote = Log4r::Evernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4ever::Evernote.new(@params[:env], @params[:auth_token])
       notebook_name = Time.now.to_i.to_s
       notebook = @evernote.notebook
       obj = notebook.get(notebook_name, @params[:stack])
@@ -152,7 +152,7 @@ describe Log4ever, 'が実行する処理' do
       @params[:maxsize] = 1
       logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
       logger.debug("test")
-      @evernote = Log4r::Evernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4ever::Evernote.new(@params[:env], @params[:auth_token])
       notebook = @evernote.notebook
       note = @evernote.note(notebook.get(@params[:notebook], @params[:stack]))
       note.get.tagGuids[0].should_not be_empty
