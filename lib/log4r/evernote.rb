@@ -78,9 +78,14 @@ module Log4ever
       notebook = ::Evernote::EDAM::Type::Notebook.new
       notebook.name = notebook_name
       notebook.stack = stack_name
-      @notebook = @@note_store.createNotebook(@@auth_token, notebook)
-      Log4r::Logger.log_internal { "Create notebook: #{stack_name}/#{notebook_name}" }
-      @notebook
+      begin
+        @notebook = @@note_store.createNotebook(@@auth_token, notebook)
+        Log4r::Logger.log_internal { "Create notebook: #{stack_name}/#{notebook_name}" }
+        @notebook
+      rescue => e
+        Log4r::Logger.log_internal { e.message }
+        nil
+      end
     end
   
     # notebook guid

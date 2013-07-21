@@ -41,7 +41,7 @@ describe Log4ever, 'が実行する処理' do
       @params[:maxsize] = 1
       logger.outputters = evernoteOutputter
       logger.debug(log_content)
-      @evernote = Log4ever::Evernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4ever::Evernote.new(@params[:auth_token])
       @notebook = @evernote.notebook
       notebook_obj = @notebook.get(@params[:notebook], @params[:stack])
       @note = @evernote.note(notebook_obj)
@@ -66,7 +66,7 @@ describe Log4ever, 'が実行する処理' do
   end
 
   describe 'Log4rの初期化処理(異常系)' do
-    it "envパラメータのチェックでエラーが出ること" do
+    it "sandboxパラメータのチェックでエラーが出ること" do
       proc {
         logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
           :sandbox => "aaa"
@@ -92,46 +92,8 @@ describe Log4ever, 'が実行する処理' do
   end
 
   describe 'Log4everの内部の処理' do
-    it '指定したスタック名が存在する場合、スタックが取得できること' do
-
-    end
-
-    it '指定したスタック名が存在しない場合、スタックは取得できないこと' do
-
-    end
-
-    it '指定したスタックオブジェクト(存在するスタック)を渡した場合、スタックに属するノートブックが取得できること' do
-
-    end
-
-    it '指定したスタックオブジェクト(存在しないスタック)を渡した場合、ノートブックが取得できないこと' do
-
-    end
-
-    it 'スタックオブジェクトを渡さない場合、全てのノートブックが取得できること' do
-
-    end
-
-    it '指定したノートブックオブジェクト(存在するノートブック)を渡した場合、ノートブックに属するノートが取得できること' do
-
-    end
-
-    it '指定したノートブックオブジェクト(存在しないノートブック)を渡した場合、ノートが取得できないこと' do
-
-    end
-
-    it 'ノートブックオブジェクトを渡さない場合、全てのノートが取得できること' do
-
-    end
-
-  end
-
-
-  
-  describe 'Log4everの処理' do
     it 'ノートブックが存在しない場合、ノートブックが新規作成されること' do
-      logger.outputters = evernoteOutputter
-      @evernote = Log4ever::Evernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4ever::Evernote.new(@params[:auth_token])
       notebook_name = Time.now.to_i.to_s
       notebook = @evernote.notebook
       obj = notebook.get(notebook_name, @params[:stack])
@@ -139,32 +101,58 @@ describe Log4ever, 'が実行する処理' do
     end
 
     it 'ノートブックが存在しない場合、スタックが新規作成されること' do
-      logger.outputters = evernoteOutputter
-      @evernote = Log4ever::Evernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4ever::Evernote.new(@params[:auth_token])
       notebook_name = Time.now.to_i.to_s
       notebook = @evernote.notebook
       obj = notebook.get(notebook_name, @params[:stack])
       obj.stack.should == @params[:stack]
     end
+
+    it '指定したスタックオブジェクト(存在するスタック)を渡した場合、既存のスタックに属するノートブックが取得できること' do
+      @evernote = Log4ever::Evernote.new(@params[:auth_token])
+      @notebook = @evernote.notebook
+      notebook_obj = @notebook.get(@params[:notebook], @params[:stack])
+      notebook_obj.guid.should_not be_nil
+    end
+
+    it '指定したスタックオブジェクト(存在しないスタック)を渡した場合、スタックが新規作成されノートブックが取得できること' do
+      @evernote = Log4ever::Evernote.new(@params[:auth_token])
+      @notebook = @evernote.notebook
+      notebook_name = Time.now.to_i.to_s
+      stack_name = Time.now.to_i.to_s
+      notebook_obj = @notebook.get(notebook_name, stack_name)
+      notebook_obj.guid.should_not be_nil
+    end
+
+    it '存在するノートブックと同名のノートブックは作成できないこと' do
+      @evernote = Log4ever::Evernote.new(@params[:auth_token])
+      @notebook = @evernote.notebook
+      notebook_obj = @notebook.create(@params[:notebook], @params[:stack])
+      notebook_obj.should be_nil
+    end
+
+    it 'ノートブックの取得に失敗しかつ存在するノートブックと同名のノートブックが指定された場合、作成できないこと' do
+      @evernote = Log4ever::Evernote.new(@params[:auth_token])
+      @notebook = @evernote.notebook
+      stack_name = Time.now.to_i.to_s
+      notebook_obj = @notebook.create(@params[:notebook], stack_name)
+      notebook_obj.should be_nil
+    end
+  end
   
+  describe 'Log4everの処理' do
     it 'タグが存在しない場合、新規作成されること' do
       @params[:tags] = [Time.now.to_i.to_s]
       @params[:maxsize] = 1
       logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
       logger.debug("test")
-      @evernote = Log4ever::Evernote.new(@params[:env], @params[:auth_token])
+      @evernote = Log4ever::Evernote.new(@params[:auth_token])
       notebook = @evernote.notebook
       note = @evernote.note(notebook.get(@params[:notebook], @params[:stack]))
       note.get.tagGuids[0].should_not be_empty
     end
 
-    it 'スタックが存在しない場合かつノートブックが存在しない場合、スタックとノートブックが新規作成されること' do
 
-    end
-
-    it 'スタックが存在する場合、既存のスタック配下にノートブックが新規作成されること' do
-
-    end
 
     it 'スタックとノートブックが存在する場合かつローテート対象でなくタグが一致するノートが存在する場合、既存のノートに追記されること' do
 
