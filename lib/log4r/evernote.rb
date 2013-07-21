@@ -109,7 +109,6 @@ module Log4ever
       return unless @params.nil? || @params.empty?
       @params = {}
       @notebook = notebook
-      #@tag = Tag.new
       if !@notebook.kind_of? ::Evernote::EDAM::Type::Notebook
         raise TypeError, "Expected kind of Notebook, got #{@notebook.class}", caller
       elsif !@notebook.respond_to? 'guid'
