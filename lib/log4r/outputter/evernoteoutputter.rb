@@ -17,6 +17,10 @@ module Log4r
     # synchronize note
     def sync
       @note = @evernote.note(@notebook)
+      @tag = @evernote.tag(@note)
+      @tag.names = @tags
+
+
       set_maxsize(@hash) # for rolling
       set_shift_age(@hash) # for rolling
     end
@@ -43,7 +47,7 @@ module Log4r
     # write log
     def write(content)
       sync
-      if note_size_requires_roll? || time_requires_roll?
+      if note_size_requires_roll? || time_requires_roll? || different_tag?
         create_log(content)
       else
         update_log(content)
@@ -53,9 +57,10 @@ module Log4r
     private
     # write log to note
     def create_log(content)
+      p "create"
       @note.clear
       @note.title = @name + " - " + Time.now.strftime("%Y-%m-%d %H:%M:%S")
-      @note.tags = @tags
+      @note.tags = @tag.get
       @note.content = content
       @note.create
       Logger.log_internal { "Create note: #{@note.guid}" }
@@ -64,7 +69,7 @@ module Log4r
     # update log in note
     def update_log(content)
       @note.addContent(content)
-      @note.tags = @tags
+      @note.tags = @tag.get
       @note.update
       Logger.log_internal { "Update note: #{@note.guid}" }
     end
@@ -77,6 +82,12 @@ module Log4r
     # whether or not to rotate
     def time_requires_roll?
       !@endTime.nil? && Time.now.to_i >= @endTime
+    end
+
+    def different_tag?
+      note_tags = @note.tags || []
+      tag = @tag.get || []
+      note_tags.size == tag.size && (note_tags - tag).size != 0
     end
   
     # max amount of log in note

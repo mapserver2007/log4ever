@@ -35,6 +35,10 @@ module Log4ever
       Note.new(notebook)
     end
 
+    def tag(note)
+      Tag.new(note)
+    end
+
     # encode for evernote internal charset
     def to_ascii(str)
       str.force_encoding("ASCII-8BIT") unless str.nil?
@@ -105,7 +109,7 @@ module Log4ever
       return unless @params.nil? || @params.empty?
       @params = {}
       @notebook = notebook
-      @tag = Tag.new
+      #@tag = Tag.new
       if !@notebook.kind_of? ::Evernote::EDAM::Type::Notebook
         raise TypeError, "Expected kind of Notebook, got #{@notebook.class}", caller
       elsif !@notebook.respond_to? 'guid'
@@ -126,10 +130,16 @@ module Log4ever
       @params[:title] = to_ascii(str)
     end
 
+    # get tag's guid list
+    def tags
+      get.tagGuids
+    end
+
     # set tags
-    def tags=(names)
-      @tag.names = names
-      @params[:tagGuids] = @tag.get
+    def tags=(tagGuids)
+      @params[:tagGuids] = tagGuids
+      #@tag.names = names
+      #@params[:tagGuids] = @tag.get
     end
 
     # append content
@@ -231,19 +241,23 @@ module Log4ever
   end
 
   class Tag < Evernote
-    def initialize; end
+    def initialize(note)
+      @note = note
+    end
 
     # set tag list
     def names=(list)
       @list = list
+      @tag_guids = nil
     end
 
     # get tag objects
     def get
       return if @list.nil? || @list.empty?
+      return @tag_guids unless @tag_guids.nil?
       @list = [@list] unless @list.kind_of?(Array)
       @tags = @@note_store.listTags(@@auth_token) if @tags.nil?
-      @list.map do |tag|
+      @tag_guids = @list.map do |tag|
         tag_obj = to_obj(tag) || create(tag)
         tag_obj.guid
       end
@@ -258,6 +272,7 @@ module Log4ever
     # clear note object
     def clear
       @tags = nil
+      @tag_guids = nil
     end
 
     private
@@ -265,6 +280,7 @@ module Log4ever
     def create(tag_name)
       tag = ::Evernote::EDAM::Type::Tag.new
       tag.name = tag_name
+      p tag_name
       tag_obj = @@note_store.createTag(@@auth_token, tag)
       Log4r::Logger.log_internal { "Create tag: #{tag_name}" }
       tag_obj
