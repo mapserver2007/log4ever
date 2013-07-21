@@ -138,8 +138,6 @@ module Log4ever
     # set tags
     def tags=(tagGuids)
       @params[:tagGuids] = tagGuids
-      #@tag.names = names
-      #@params[:tagGuids] = @tag.get
     end
 
     # append content

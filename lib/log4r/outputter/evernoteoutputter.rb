@@ -19,8 +19,6 @@ module Log4r
       @note = @evernote.note(@notebook)
       @tag = @evernote.tag(@note)
       @tag.names = @tags
-
-
       set_maxsize(@hash) # for rolling
       set_shift_age(@hash) # for rolling
     end
@@ -57,7 +55,6 @@ module Log4r
     private
     # write log to note
     def create_log(content)
-      p "create"
       @note.clear
       @note.title = @name + " - " + Time.now.strftime("%Y-%m-%d %H:%M:%S")
       @note.tags = @tag.get
