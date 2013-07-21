@@ -152,19 +152,51 @@ describe Log4ever, 'が実行する処理' do
       note.get.tagGuids[0].should_not be_empty
     end
 
+    it '更新対象のノートのタグが増えた場合、新規ノートが作成されること' do
+      logger = Log4r::Logger.new(LOGGER_NAME)
+      # タグ変更前
+      evernoteOutputter = Log4r::EvernoteOutputter.new('evernote', @params)
+      logger.outputters = evernoteOutputter
+      logger.info("test1")
+      evernote = Log4ever::Evernote.new(@params[:auth_token])
+      notebook = evernote.notebook
+      note = evernote.note(notebook.get(@params[:notebook], @params[:stack])).get
+      guid_before = note.guid
+      # タグ変更後
+      @params[:tags] << 'Log2'
+      evernoteOutputter = Log4r::EvernoteOutputter.new('evernote', @params)
+      logger.outputters = evernoteOutputter
+      logger.info("test1")
+      evernote = Log4ever::Evernote.new(@params[:auth_token])
+      notebook = evernote.notebook
+      note = evernote.note(notebook.get(@params[:notebook], @params[:stack])).get
+      guid_after = note.guid
 
-
-    it 'スタックとノートブックが存在する場合かつローテート対象でなくタグが一致するノートが存在する場合、既存のノートに追記されること' do
-
+      guid_before.should_not == guid_after
     end
 
-    it 'スタックとノートブックが存在する場合かつローテート対象でなくタグが一致するノートが存在しない場合、新規ノートが作成されること' do
+    it '更新対象のノートのタグが減った場合、新規ノートが作成されること' do
+      logger = Log4r::Logger.new(LOGGER_NAME)
+      # タグ変更前
+      @params[:tags] << 'Log2'
+      evernoteOutputter = Log4r::EvernoteOutputter.new('evernote', @params)
+      logger.outputters = evernoteOutputter
+      logger.info("test1")
+      evernote = Log4ever::Evernote.new(@params[:auth_token])
+      notebook = evernote.notebook
+      note = evernote.note(notebook.get(@params[:notebook], @params[:stack])).get
+      guid_before = note.guid
+      # タグ変更後
+      @params[:tags] = 'Log'
+      evernoteOutputter = Log4r::EvernoteOutputter.new('evernote', @params)
+      logger.outputters = evernoteOutputter
+      logger.info("test1")
+      evernote = Log4ever::Evernote.new(@params[:auth_token])
+      notebook = evernote.notebook
+      note = evernote.note(notebook.get(@params[:notebook], @params[:stack])).get
+      guid_after = note.guid
 
+      guid_before.should_not == guid_after
     end
-
-
-
-
-
   end
 end

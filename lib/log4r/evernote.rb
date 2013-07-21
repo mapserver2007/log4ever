@@ -278,7 +278,6 @@ module Log4ever
     def create(tag_name)
       tag = ::Evernote::EDAM::Type::Tag.new
       tag.name = tag_name
-      p tag_name
       tag_obj = @@note_store.createTag(@@auth_token, tag)
       Log4r::Logger.log_internal { "Create tag: #{tag_name}" }
       tag_obj

@@ -81,10 +81,11 @@ module Log4r
       !@endTime.nil? && Time.now.to_i >= @endTime
     end
 
+    # diff note's tag and register tag 
     def different_tag?
       note_tags = @note.tags || []
       tag = @tag.get || []
-      note_tags.size == tag.size && (note_tags - tag).size != 0
+      (note_tags - tag).size != 0 || (tag - note_tags).size != 0
     end
   
     # max amount of log in note
