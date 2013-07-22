@@ -198,5 +198,17 @@ describe Log4ever, 'が実行する処理' do
 
       guid_before.should_not == guid_after
     end
+
+    it '期間単位でのログローテートを有効にしたとき、エラーが発生しないこと' do
+      proc {
+        logger = Log4r::Logger.new(LOGGER_NAME)
+        @params.delete(:maxsize)
+        @params[:shift_age] = Log4ever::ShiftAge::DAILY
+        evernoteOutputter = Log4r::EvernoteOutputter.new('evernote', @params)
+        logger.outputters = evernoteOutputter
+        logger.info("test1")
+      }.should_not raise_error()
+    end
+
   end
 end
