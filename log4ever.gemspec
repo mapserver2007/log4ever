@@ -14,6 +14,6 @@ Gem::Specification.new do |gem|
   gem.add_dependency('active_support', '>= 3.0.0')
   gem.add_dependency('i18n', '>= 0.6.0')
   gem.add_dependency('evernote_oauth', '>= 0.2.1')
-  gem.version       = '0.1.1'
+  gem.version       = '0.1.2'
 end
 

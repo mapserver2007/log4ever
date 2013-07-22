@@ -3,7 +3,7 @@ require 'log4r/outputter/evernoteoutputter'
 require 'evernote_oauth'
 
 module Log4ever
-  VERSION = '0.1.1'
+  VERSION = '0.1.2'
   class TypeError < StandardError; end
   module ShiftAge
     DAILY = 1
