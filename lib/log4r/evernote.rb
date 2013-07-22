@@ -213,7 +213,7 @@ module Log4ever
     
     # get created time 
     def created_at
-      time = @note.created.to_s
+      time = @note.created_at.to_s
       ut = time.slice(0, time.length - 3)
       Time.at(ut.to_f)
     end
