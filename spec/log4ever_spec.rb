@@ -7,7 +7,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../spec/spec_helper')
 
 describe Log4ever, 'が実行する処理' do
   LOGGER_NAME = 'Log4ever'
-  
+
   before do
     @formatter = Log4r::PatternFormatter.new(
       :pattern => "%d %C[%l]: %M ",
@@ -37,7 +37,6 @@ describe Log4ever, 'が実行する処理' do
   describe 'Log4rのEvernote書き出し処理' do
     it '書き出しが成功すること' do
       log_content = "aaa"
-      formatter_content = "\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s.*?\[.*?\]:\s(.*)\\n"
       @params[:maxsize] = 1
       logger.outputters = evernoteOutputter
       logger.debug(log_content)
@@ -53,7 +52,7 @@ describe Log4ever, 'が実行する処理' do
       end
     end
   end
-  
+
   describe 'Log4rの初期化処理(正常系)' do
     it 'パラメータのチェックでエラーが出ないこと' do
       logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params)
@@ -139,7 +138,7 @@ describe Log4ever, 'が実行する処理' do
       notebook_obj.should be_nil
     end
   end
-  
+
   describe 'Log4everの処理' do
     it 'タグが存在しない場合、新規作成されること' do
       @params[:tags] = [Time.now.to_i.to_s]

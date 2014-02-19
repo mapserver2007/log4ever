@@ -13,7 +13,7 @@ module Log4ever
 
   class Evernote
     @@note_store = nil
-    
+
     def initialize(auth_token, is_sandbox = false)
       if @@note_store.nil?
         @@auth_token = auth_token
@@ -47,14 +47,14 @@ module Log4ever
 
   class Notebook < Evernote
     def initialize; end
-    
+
     # get notebook
     def get(notebook_name, stack_name = nil)
       # return cache if same notebook and stack
       return @notebook if @notebook_name == notebook_name && @stack_name == stack_name
       # get notebook list from evernote
       @notebooks = @@note_store.listNotebooks(@@auth_token) if @notebooks.nil?
-      @notebook = nil 
+      @notebook = nil
       @notebook_name = notebook_name
       @stack_name = stack_name
       @notebooks.each do |notebook|
@@ -76,7 +76,7 @@ module Log4ever
       clear
       get(notebook_name, stack_name)
     end
-    
+
     # create notebook
     def create(notebook_name, stack_name = nil)
       notebook = ::Evernote::EDAM::Type::Notebook.new
@@ -91,7 +91,7 @@ module Log4ever
         nil
       end
     end
-  
+
     # notebook guid
     def guid; @notebook.guid end
 
@@ -104,7 +104,7 @@ module Log4ever
 
   class Note < Evernote
     XML_TEMPLATE_BYTE = 237
-    
+
     def initialize(notebook)
       return unless @params.nil? || @params.empty?
       @params = {}
@@ -115,12 +115,12 @@ module Log4ever
         raise NoMethodError, "#{@notebook.class} do not has method: guid", caller
       end
     end
-    
+
     # content size
     def size
       content.bytesize > 0 ? content.bytesize - XML_TEMPLATE_BYTE : 0
     end
-    
+
     # note guid
     def guid; @note.guid end
 
@@ -145,14 +145,14 @@ module Log4ever
       content_xml.at('en-note').inner_html += new_html
       @params[:content] = @content_ = to_ascii(content_xml.to_xml)
     end
-    
+
     # set new content
     def content=(text)
       @params[:content] = @content_ = to_ascii("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" +
       "<!DOCTYPE en-note SYSTEM \"http://xml.evernote.com/pub/enml2.dtd\">\n" +
       "<en-note style=\"word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;\">\n" +
       "<div style=\"font-family: Courier New\">#{text}</div></en-note>")
-    end 
+    end
 
     # create note
     def create
@@ -171,7 +171,7 @@ module Log4ever
       @note = @content_ = @content_xml = nil
       initialize(@notebook)
     end
-    
+
     # get latest note object
     def get
       return @note unless @note.nil?
@@ -184,7 +184,7 @@ module Log4ever
       if note_list.notes.empty?
         Log4r::Logger.log_internal { "Note not found at #{@notebook.guid}" }
         @note = ::Evernote::EDAM::Type::Note.new
-      else  
+      else
         @note = note_list.notes[0]
       end
       @note
@@ -195,7 +195,7 @@ module Log4ever
       clear
       get
     end
-    
+
     # create note object
     def createNote
       @note = ::Evernote::EDAM::Type::Note.new
@@ -203,21 +203,21 @@ module Log4ever
       @params.each{|method, value| @note.send("#{method.to_s}=", value)}
       @note
     end
-    
+
     # get note object
     def updateNote
       @note.nil? and get
       @note.content = @params[:content]
       @note
     end
-    
-    # get created time 
+
+    # get created time
     def created_at
       time = get.created.to_s
       ut = time.slice(0, time.length - 3)
       Time.at(ut.to_f)
     end
-    
+
     # get note content text
     def content
       return @content_ unless @content_.nil?
@@ -265,7 +265,7 @@ module Log4ever
       clear
       get
     end
-    
+
     # clear note object
     def clear
       @tags = nil

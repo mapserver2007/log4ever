@@ -13,7 +13,7 @@ module Log4r
       super(_name, hash)
       validate(hash)
     end
-    
+
     # synchronize note
     def sync
       @note = @evernote.note(@notebook)
@@ -62,7 +62,7 @@ module Log4r
       @note.create
       Logger.log_internal { "Create note: #{@note.guid}" }
     end
-    
+
     # update log in note
     def update_log(content)
       @note.addContent(content)
@@ -70,7 +70,7 @@ module Log4r
       @note.update
       Logger.log_internal { "Update note: #{@note.guid}" }
     end
-    
+
     # more expensive, only for startup
     def note_size_requires_roll?
       @note.size == 0 || (@maxsize > 0 && @note.size >= @maxsize)
@@ -81,13 +81,13 @@ module Log4r
       !@endTime.nil? && Time.now.to_i >= @endTime
     end
 
-    # diff note's tag and register tag 
+    # diff note's tag and register tag
     def different_tag?
       note_tags = @note.tags || []
       tag = @tag.get || []
       (note_tags - tag).size != 0 || (tag - note_tags).size != 0
     end
-  
+
     # max amount of log in note
     def set_maxsize(options)
       if options.has_key?(:maxsize) || options.has_key?('maxsize')
@@ -115,7 +115,7 @@ module Log4r
         @maxsize = 0
       end
     end
-    
+
     # rolling interval
     def set_shift_age(options)
       if options.has_key?(:shift_age) || options.has_key?('shift_age')
