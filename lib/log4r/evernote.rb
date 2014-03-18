@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 require 'log4r/outputter/evernoteoutputter'
 require 'evernote_oauth'
+require 'nkf'
 
 module Log4ever
-  VERSION = '0.1.2'
+  VERSION = '0.2.0'
   class TypeError < StandardError; end
   module ShiftAge
     DAILY = 1
@@ -35,13 +36,20 @@ module Log4ever
       Note.new(notebook)
     end
 
+    # get registered tag or create new tag
     def tag(note)
       Tag.new(note)
     end
 
     # encode for evernote internal charset
-    def to_ascii(str)
-      str.force_encoding("ASCII-8BIT") unless str.nil?
+    # convert character encoding to UTF-8 from Shift_JIS or EUC-JP
+    def to_utf8(str)
+      if NKF.guess(str).name == "Shift_JIS"
+        str.encode!("UTF-8", "Shift_JIS")
+      elsif NKF.guess(str).name == "EUC-JP"
+        str.encode!("UTF-8", "EUC-JP")
+      end
+      str
     end
   end
 
@@ -58,8 +66,6 @@ module Log4ever
       @notebook_name = notebook_name
       @stack_name = stack_name
       @notebooks.each do |notebook|
-        notebook_name = to_ascii(notebook_name)
-        stack_name = to_ascii(stack_name)
         if notebook.name == notebook_name && notebook.stack == stack_name
           Log4r::Logger.log_internal { "Get notebook: #{stack_name}/#{notebook_name}" }
           @notebook = notebook
@@ -126,7 +132,7 @@ module Log4ever
 
     # set new title
     def title=(str)
-      @params[:title] = to_ascii(str)
+      @params[:title] = to_utf8(str)
     end
 
     # get tag's guid list
@@ -141,17 +147,17 @@ module Log4ever
 
     # append content
     def addContent(text)
-      new_html = "<div style='font-family: Courier New'>#{text}</div>"
+      new_html = "<div style='font-family: Courier New'>" + to_utf8(text) + "</div>"
       content_xml.at('en-note').inner_html += new_html
-      @params[:content] = @content_ = to_ascii(content_xml.to_xml)
+      @params[:content] = @content_ = content_xml.to_xml
     end
 
     # set new content
     def content=(text)
-      @params[:content] = @content_ = to_ascii("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" +
+      @params[:content] = @content_ = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" +
       "<!DOCTYPE en-note SYSTEM \"http://xml.evernote.com/pub/enml2.dtd\">\n" +
       "<en-note style=\"word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;\">\n" +
-      "<div style=\"font-family: Courier New\">#{text}</div></en-note>")
+      "<div style=\"font-family: Courier New\">" + to_utf8(text) + "</div></en-note>"
     end
 
     # create note
@@ -284,7 +290,7 @@ module Log4ever
 
     # tag name to tag object
     def to_obj(tag_name)
-      tag_name = to_ascii(tag_name)
+      tag_name = to_utf8(tag_name)
       @tags.each do |tag|
         if tag_name == tag.name
           Log4r::Logger.log_internal { "Get tag: #{tag_name}" }
