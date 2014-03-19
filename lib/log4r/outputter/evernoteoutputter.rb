@@ -5,6 +5,7 @@ require "log4r/staticlogger"
 require 'active_support'
 require 'active_support/time'
 require 'active_support/core_ext'
+require 'nkf'
 
 module Log4r
   class EvernoteOutputter < Outputter
@@ -29,11 +30,11 @@ module Log4r
       raise ArgumentError, "Sandbox must be type of boolean" unless is_sandbox == false || is_sandbox == true
       @auth_token = hash[:auth_token] || hash['auth_token'] || ""
       raise ArgumentError, "Must specify from auth token" if @auth_token.empty?
-      notebook_name = hash[:notebook] || hash['notebook'] || ""
+      notebook_name = to_utf8(hash[:notebook] || hash['notebook'] || "")
       raise ArgumentError, "Must specify from notebook" if notebook_name.empty?
-      stack_name = hash[:stack] || hash['stack']
+      stack_name = to_utf8(hash[:stack] || hash['stack'])
       @evernote = Log4ever::Evernote.new(@auth_token, is_sandbox)
-      @tags = hash[:tags] || hash['tags'] || []
+      @tags = to_utf8(hash[:tags] || hash['tags'] || [])
       notebook = @evernote.notebook
       @notebook = notebook.get(notebook_name, stack_name)
       @hash = hash
@@ -56,16 +57,16 @@ module Log4r
     # write log to note
     def create_log(content)
       @note.clear
-      @note.title = @name + " - " + Time.now.strftime("%Y-%m-%d %H:%M:%S")
+      @note.title = to_utf8(@name) + " - " + Time.now.strftime("%Y-%m-%d %H:%M:%S")
       @note.tags = @tag.get
-      @note.content = content
+      @note.content = to_utf8(content)
       @note.create
       Logger.log_internal { "Create note: #{@note.guid}" }
     end
 
     # update log in note
     def update_log(content)
-      @note.addContent(content)
+      @note.addContent(to_utf8(content))
       @note.tags = @tag.get
       @note.update
       Logger.log_internal { "Update note: #{@note.guid}" }
@@ -144,6 +145,18 @@ module Log4r
           end
         end
       end
+    end
+
+    # encode for evernote internal charset
+    # convert character encoding to UTF-8 from Shift_JIS or EUC-JP
+    def to_utf8(mixed)
+      if mixed.kind_of? Array
+        mixed.each {|elem| to_utf8(elem)}
+      else mixed.kind_of? String
+        charset = NKF.guess(mixed).name
+        charset == "UTF-8" ? mixed : mixed.encode!("UTF-8", charset)
+      end
+      mixed
     end
   end
 end

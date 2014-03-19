@@ -1,67 +1,70 @@
 # -*- coding: utf-8 -*-
 require 'log4r/outputter/evernoteoutputter'
 require 'evernote_oauth'
-require 'nkf'
 
 module Log4ever
   VERSION = '0.2.0'
+
   class TypeError < StandardError; end
+
   module ShiftAge
     DAILY = 1
     WEEKLY = 2
     MONTHLY = 3
   end
 
-  class Evernote
-    @@note_store = nil
+  class EvernoteAuth
+    attr_reader :auth_token
+    attr_reader :note_store
 
     def initialize(auth_token, is_sandbox = false)
-      if @@note_store.nil?
-        @@auth_token = auth_token
-        @@note_store = EvernoteOAuth::Client.new({
-          :token => auth_token,
-          :sandbox => is_sandbox
-        }).note_store
+      @auth_token = auth_token
+      @note_store = EvernoteOAuth::Client.new({
+        :token => auth_token,
+        :sandbox => is_sandbox
+      }).note_store
+    end
+  end
+
+  class Evernote
+    @@auth_store = nil
+
+    # Execute authentication to evernote
+    def initialize(auth_token, is_sandbox = false)
+      if @@auth_store.nil?
+        @@auth_store = EvernoteAuth.new(auth_token, is_sandbox)
       end
     end
 
     # get registered notebook or create new notebook
     # search the notebook under the stack if stack_name specific
     def notebook
-      Notebook.new
+      Notebook.new(@@auth_store)
     end
 
     # get registered note or create new note
     def note(notebook)
-      Note.new(notebook)
+      Note.new(notebook, @@auth_store)
     end
 
     # get registered tag or create new tag
     def tag(note)
-      Tag.new(note)
-    end
-
-    # encode for evernote internal charset
-    # convert character encoding to UTF-8 from Shift_JIS or EUC-JP
-    def to_utf8(str)
-      if NKF.guess(str).name == "Shift_JIS"
-        str.encode!("UTF-8", "Shift_JIS")
-      elsif NKF.guess(str).name == "EUC-JP"
-        str.encode!("UTF-8", "EUC-JP")
-      end
-      str
+      Tag.new(note, @@auth_store)
     end
   end
 
-  class Notebook < Evernote
-    def initialize; end
+  class Notebook
+    # constructor
+    def initialize(auth_store)
+      @auth_store = auth_store
+    end
 
     # get notebook
     def get(notebook_name, stack_name = nil)
       # return cache if same notebook and stack
       return @notebook if @notebook_name == notebook_name && @stack_name == stack_name
       # get notebook list from evernote
-      @notebooks = @@note_store.listNotebooks(@@auth_token) if @notebooks.nil?
+      @notebooks = @auth_store.note_store.listNotebooks(@auth_store.auth_token) if @notebooks.nil?
       @notebook = nil
       @notebook_name = notebook_name
       @stack_name = stack_name
@@ -89,7 +92,7 @@ module Log4ever
       notebook.name = notebook_name
       notebook.stack = stack_name
       begin
-        @notebook = @@note_store.createNotebook(@@auth_token, notebook)
+        @notebook = @auth_store.note_store.createNotebook(@auth_store.auth_token, notebook)
         Log4r::Logger.log_internal { "Create notebook: #{stack_name}/#{notebook_name}" }
         @notebook
       rescue => e
@@ -103,17 +106,18 @@ module Log4ever
 
     # clear notebook object
     def clear
-      @notebooks = @@note_store.listNotebooks(@@auth_token)
+      @notebooks = @auth_store.note_store.listNotebooks(@auth_store.auth_token)
       @notebook = nil
     end
   end
 
-  class Note < Evernote
+  class Note
     XML_TEMPLATE_BYTE = 237
 
-    def initialize(notebook)
+    def initialize(notebook, auth_store)
       return unless @params.nil? || @params.empty?
       @params = {}
+      @auth_store = auth_store
       @notebook = notebook
       if !@notebook.kind_of? ::Evernote::EDAM::Type::Notebook
         raise TypeError, "Expected kind of Notebook, got #{@notebook.class}", caller
@@ -132,7 +136,7 @@ module Log4ever
 
     # set new title
     def title=(str)
-      @params[:title] = to_utf8(str)
+      @params[:title] = str
     end
 
     # get tag's guid list
@@ -147,7 +151,7 @@ module Log4ever
 
     # append content
     def addContent(text)
-      new_html = "<div style='font-family: Courier New'>" + to_utf8(text) + "</div>"
+      new_html = "<div style='font-family: Courier New'>" + text + "</div>"
       content_xml.at('en-note').inner_html += new_html
       @params[:content] = @content_ = content_xml.to_xml
     end
@@ -157,18 +161,18 @@ module Log4ever
       @params[:content] = @content_ = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" +
       "<!DOCTYPE en-note SYSTEM \"http://xml.evernote.com/pub/enml2.dtd\">\n" +
       "<en-note style=\"word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;\">\n" +
-      "<div style=\"font-family: Courier New\">" + to_utf8(text) + "</div></en-note>"
+      "<div style=\"font-family: Courier New\">" + text + "</div></en-note>"
     end
 
     # create note
     def create
-      @@note_store.createNote(@@auth_token, createNote)
+      @auth_store.note_store.createNote(@auth_store.auth_token, createNote)
       clear
     end
 
     # update note
     def update
-      @@note_store.updateNote(@@auth_token, updateNote)
+      @auth_store.note_store.updateNote(@auth_store.auth_token, updateNote)
     end
 
     # clear note object
@@ -186,7 +190,7 @@ module Log4ever
       filter.notebookGuid = @notebook.guid
       filter.timeZone = "Asia/Tokyo"
       filter.ascending = false # descending
-      note_list = @@note_store.findNotes(@@auth_token, filter, 0, 1)
+      note_list = @auth_store.note_store.findNotes(@auth_store.auth_token, filter, 0, 1)
       if note_list.notes.empty?
         Log4r::Logger.log_internal { "Note not found at #{@notebook.guid}" }
         @note = ::Evernote::EDAM::Type::Note.new
@@ -228,7 +232,7 @@ module Log4ever
     def content
       return @content_ unless @content_.nil?
       @note.nil? and get
-      @content_ = !@note.nil? && !@note.guid.nil? ? @@note_store.getNoteContent(@@auth_token, @note.guid) : ""
+      @content_ = !@note.nil? && !@note.guid.nil? ? @auth_store.note_store.getNoteContent(@auth_store.auth_token, @note.guid) : ""
     end
 
     # get note content xml object
@@ -243,9 +247,10 @@ module Log4ever
     end
   end
 
-  class Tag < Evernote
-    def initialize(note)
+  class Tag
+    def initialize(note, auth_store)
       @note = note
+      @auth_store = auth_store
     end
 
     # set tag list
@@ -259,7 +264,7 @@ module Log4ever
       return if @list.nil? || @list.empty?
       return @tag_guids unless @tag_guids.nil?
       @list = [@list] unless @list.kind_of?(Array)
-      @tags = @@note_store.listTags(@@auth_token) if @tags.nil?
+      @tags = @auth_store.note_store.listTags(@auth_store.auth_token) if @tags.nil?
       @tag_guids = @list.map do |tag|
         tag_obj = to_obj(tag) || create(tag)
         tag_obj.guid
@@ -283,14 +288,14 @@ module Log4ever
     def create(tag_name)
       tag = ::Evernote::EDAM::Type::Tag.new
       tag.name = tag_name
-      tag_obj = @@note_store.createTag(@@auth_token, tag)
+      tag_obj = @auth_store.note_store.createTag(@auth_store.auth_token, tag)
       Log4r::Logger.log_internal { "Create tag: #{tag_name}" }
       tag_obj
     end
 
     # tag name to tag object
     def to_obj(tag_name)
-      tag_name = to_utf8(tag_name)
+      tag_name = tag_name
       @tags.each do |tag|
         if tag_name == tag.name
           Log4r::Logger.log_internal { "Get tag: #{tag_name}" }
