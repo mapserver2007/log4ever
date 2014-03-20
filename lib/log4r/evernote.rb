@@ -5,7 +5,7 @@ require 'evernote_oauth'
 module Log4ever
   VERSION = '0.2.0'
 
-  class TypeError < StandardError; end
+  class EvernoteError < StandardError; end
 
   module ShiftAge
     DAILY = 1
@@ -97,7 +97,7 @@ module Log4ever
         @notebook
       rescue => e
         Log4r::Logger.log_internal { e.message }
-        nil
+        raise EvernoteError, "Create notebook failed. Probably, already exists notebook of same name." if @notebook.nil?
       end
     end
 
@@ -120,7 +120,7 @@ module Log4ever
       @auth_store = auth_store
       @notebook = notebook
       if !@notebook.kind_of? ::Evernote::EDAM::Type::Notebook
-        raise TypeError, "Expected kind of Notebook, got #{@notebook.class}", caller
+        raise EvernoteError, "Expected kind of Notebook, got #{@notebook.class}", caller
       elsif !@notebook.respond_to? 'guid'
         raise NoMethodError, "#{@notebook.class} do not has method: guid", caller
       end
