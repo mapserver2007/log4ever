@@ -124,18 +124,21 @@ describe Log4ever, 'が実行する処理' do
     end
 
     it '存在するノートブックと同名のノートブックは作成できないこと' do
-      @evernote = Log4ever::Evernote.new(@params[:auth_token])
-      @notebook = @evernote.notebook
-      notebook_obj = @notebook.create(@params[:notebook], @params[:stack])
-      notebook_obj.should be_nil
+      proc {
+        @evernote = Log4ever::Evernote.new(@params[:auth_token])
+        @notebook = @evernote.notebook
+        notebook_obj = @notebook.create(@params[:notebook], @params[:stack])
+      }.should raise_error()
     end
 
     it 'ノートブックの取得に失敗しかつ存在するノートブックと同名のノートブックが指定された場合、作成できないこと' do
-      @evernote = Log4ever::Evernote.new(@params[:auth_token])
-      @notebook = @evernote.notebook
-      stack_name = Time.now.to_i.to_s
-      notebook_obj = @notebook.create(@params[:notebook], stack_name)
-      notebook_obj.should be_nil
+      proc {
+        @evernote = Log4ever::Evernote.new(@params[:auth_token])
+        @notebook = @evernote.notebook
+        stack_name = Time.now.to_i.to_s
+        notebook_obj = @notebook.create(@params[:notebook], stack_name)
+        notebook_obj.should be_nil
+      }.should raise_error()
     end
   end
 
@@ -209,5 +212,38 @@ describe Log4ever, 'が実行する処理' do
       }.should_not raise_error()
     end
 
+    it 'スタックにUTF-8以外の文字列を指定した時、エラーが発生しないこと' do
+      proc {
+        @params[:stack] = "\xA4\xA2\xA4\xA2\xA4\xA2"
+        @params[:notebook] = Time.now.to_i.to_s
+        logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
+        logger.debug("test")
+      }.should_not raise_error()
+    end
+
+    it 'ノートブックにUTF-8以外の文字列を指定した時、エラーが発生しないこと' do
+      proc {
+        @params[:notebook] = "\xA4\xA2" + Time.now.to_i.to_s
+        logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
+        logger.debug("test")
+      }.should_not raise_error()
+    end
+
+    it 'タグにUTF-8以外の文字列を指定した時、エラーが発生しないこと' do
+      proc {
+        @params[:tags] = ['Log', "\x82\xA0\x82\xA0", "\xA4\xA2"]
+        logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
+        logger.debug("test")
+      }.should_not raise_error()
+    end
+
+    it 'ノートにUTF-8以外の文字列を指定した時、エラーが発生しないこと' do
+      proc {
+        logger = Log4r::Logger.new(LOGGER_NAME)
+        logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
+        logger.debug("\x82\xA0") # Shift_JIS
+        logger.debug("\xA4\xA2") # EUC-JP
+      }.should_not raise_error()
+    end
   end
 end
