@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 gem 'log4r'
-gem 'active_support'
+gem 'activesupport'
 gem 'i18n'
 gem 'nokogiri'
 gem 'evernote_oauth'
