@@ -62,6 +62,8 @@ Change the parameter of EvetnoteOutputter class, use evernote_oauth.
 Performance improvement.
 * 0.1.2
 Bug fix.
+* 0.2.0
+Ruby2.0.0 support. Bug fix.
 
 ##License
 Licensed under the MIT
