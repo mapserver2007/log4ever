@@ -3,7 +3,7 @@ require 'log4r/outputter/evernoteoutputter'
 require 'evernote_oauth'
 
 module Log4ever
-  VERSION = '0.2.0'
+  VERSION = '0.1.3'
 
   class EvernoteError < StandardError; end
 
