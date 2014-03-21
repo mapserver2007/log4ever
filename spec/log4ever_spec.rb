@@ -88,6 +88,22 @@ describe Log4ever, 'が実行する処理' do
         ))
       }.should raise_error(ArgumentError)
     end
+
+    it "ログローテートサイズパラメータのチェックでエラーが出ること" do
+      proc {
+        logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
+          :maxsize => 0
+        ))
+      }.should raise_error(TypeError)
+    end
+
+    it "ログローテート期間パラメータのチェックでエラーが出ること" do
+      proc {
+        logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
+          :shift_age => 4
+        ))
+      }.should raise_error(TypeError)
+    end
   end
 
   describe 'Log4everの内部の処理' do
@@ -127,7 +143,7 @@ describe Log4ever, 'が実行する処理' do
       proc {
         @evernote = Log4ever::Evernote.new(@params[:auth_token])
         @notebook = @evernote.notebook
-        notebook_obj = @notebook.create(@params[:notebook], @params[:stack])
+        @notebook.create(@params[:notebook], @params[:stack])
       }.should raise_error()
     end
 
