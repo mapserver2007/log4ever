@@ -35,7 +35,7 @@ Output:
 
     2012-08-06 21:12:31 Evernote[INFO]: log output
 
-The output results are stored in Evernote.  
+The output results are stored in Evernote.
 
 ###ChangeLog
 * 0.0.1
@@ -62,7 +62,7 @@ Change the parameter of EvetnoteOutputter class, use evernote_oauth.
 Performance improvement.
 * 0.1.2
 Bug fix.
-* 0.2.0
+* 0.1.3
 Ruby2.0.0 support. Bug fix.
 
 ##License
