@@ -140,8 +140,6 @@ module Log4r
           when Log4ever::ShiftAge::MONTHLY
             next_month = Time.local(created_at.next_month.year, created_at.next_month.month, created_at.next_month.day)
             @endTime = next_month.to_i
-          else
-            raise TypeError, "Argument 'shift_age' must be '1' or '2' or '3'", caller
           end
         end
       end

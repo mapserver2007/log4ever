@@ -3,7 +3,7 @@ require 'log4r/outputter/evernoteoutputter'
 require 'evernote_oauth'
 
 module Log4ever
-  VERSION = '0.1.3'
+  VERSION = '0.1.4'
 
   class EvernoteError < StandardError; end
 
@@ -97,7 +97,7 @@ module Log4ever
         @notebook
       rescue => e
         Log4r::Logger.log_internal { e.message }
-        raise EvernoteError, "Create notebook failed. Probably, already exists notebook of same name." if @notebook.nil?
+        raise EvernoteError, "Create notebook failed. Probably, already exists notebook of same name.", caller if @notebook.nil?
       end
     end
 
@@ -295,7 +295,6 @@ module Log4ever
 
     # tag name to tag object
     def to_obj(tag_name)
-      tag_name = tag_name
       @tags.each do |tag|
         if tag_name == tag.name
           Log4r::Logger.log_internal { "Get tag: #{tag_name}" }
