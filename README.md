@@ -66,6 +66,8 @@ Bug fix.
 Ruby2.0.0 support. Bug fix.
 * 0.1.4
 Add testcase.
+* 0.1.5
+Performance improvement.
 
 ##License
 Licensed under the MIT
