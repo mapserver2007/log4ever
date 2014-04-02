@@ -13,39 +13,41 @@ module Log4r
     def initialize(_name, hash = {})
       super(_name, hash)
       validate(hash)
+      evernote = Log4ever::Evernote.new(@auth_token, @is_sandbox)
+      @notebook = evernote.notebook.get(@notebook_name, @stack_name)
+      @note = evernote.note(@notebook)
+      @tag = evernote.tag(@note)
+      @tag.names = @tags
+      set_maxsize(hash) # for rolling
+      set_shift_age(hash) # for rolling
     end
 
     # synchronize note
-    def sync
-      @note = @evernote.note(@notebook)
-      @tag = @evernote.tag(@note)
-      @tag.names = @tags
-      set_maxsize(@hash) # for rolling
-      set_shift_age(@hash) # for rolling
-    end
+    # def sync
+    #   @note = @evernote.note(@notebook)
+    #   @tag = @evernote.tag(@note)
+    #   @tag.names = @tags
+    #   set_maxsize(@hash) # for rolling
+    #   set_shift_age(@hash) # for rolling
+    # end
 
     # validation of evernote parameters
     def validate(hash)
-      is_sandbox = hash[:sandbox] || hash['sandbox'] || false
-      raise ArgumentError, "Sandbox must be type of boolean" unless is_sandbox == false || is_sandbox == true
+      @is_sandbox = hash[:sandbox] || hash['sandbox'] || false
+      raise ArgumentError, "Sandbox must be type of boolean" unless @is_sandbox == false || @is_sandbox == true
       @auth_token = hash[:auth_token] || hash['auth_token'] || ""
       raise ArgumentError, "Must specify from auth token" if @auth_token.empty?
-      notebook_name = to_utf8(hash[:notebook] || hash['notebook'] || "")
-      raise ArgumentError, "Must specify from notebook" if notebook_name.empty?
-      stack_name = to_utf8(hash[:stack] || hash['stack'])
-      @evernote = Log4ever::Evernote.new(@auth_token, is_sandbox)
+      @notebook_name = to_utf8(hash[:notebook] || hash['notebook'] || "")
+      raise ArgumentError, "Must specify from notebook" if @notebook_name.empty?
+      @stack_name = to_utf8(hash[:stack] || hash['stack'])
       @tags = to_utf8(hash[:tags] || hash['tags'] || [])
-      notebook = @evernote.notebook
-      @notebook = notebook.get(notebook_name, stack_name)
-      @hash = hash
-      sync
     end
 
     def canonical_log(logevent); super end
 
     # write log
     def write(content)
-      sync
+      # sync
       if note_size_requires_roll? || time_requires_roll? || different_tag?
         create_log(content)
       else
@@ -56,7 +58,7 @@ module Log4r
     private
     # write log to note
     def create_log(content)
-      @note.clear
+      # @note.clear
       @note.title = to_utf8(@name) + " - " + Time.now.strftime("%Y-%m-%d %H:%M:%S")
       @note.tags = @tag.get
       @note.content = to_utf8(content)

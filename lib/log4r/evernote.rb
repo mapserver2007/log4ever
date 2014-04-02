@@ -3,7 +3,7 @@ require 'log4r/outputter/evernoteoutputter'
 require 'evernote_oauth'
 
 module Log4ever
-  VERSION = '0.1.4'
+  VERSION = '0.1.5'
 
   class EvernoteError < StandardError; end
 
@@ -39,17 +39,20 @@ module Log4ever
     # get registered notebook or create new notebook
     # search the notebook under the stack if stack_name specific
     def notebook
-      Notebook.new(@@auth_store)
+      @notebook = Notebook.new(@@auth_store) if @notebook.nil?
+      @notebook
     end
 
     # get registered note or create new note
     def note(notebook)
-      Note.new(notebook, @@auth_store)
+      @note = Note.new(notebook, @@auth_store) if @note.nil?
+      @note
     end
 
     # get registered tag or create new tag
     def tag(note)
-      Tag.new(note, @@auth_store)
+      @tag = Tag.new(note, @@auth_store) if @tag.nil?
+      @tag
     end
   end
 
@@ -117,13 +120,13 @@ module Log4ever
     def initialize(notebook, auth_store)
       return unless @params.nil? || @params.empty?
       @params = {}
-      @auth_store = auth_store
-      @notebook = notebook
-      if !@notebook.kind_of? ::Evernote::EDAM::Type::Notebook
-        raise EvernoteError, "Expected kind of Notebook, got #{@notebook.class}", caller
-      elsif !@notebook.respond_to? 'guid'
-        raise NoMethodError, "#{@notebook.class} do not has method: guid", caller
+      if !notebook.kind_of? ::Evernote::EDAM::Type::Notebook
+        raise EvernoteError, "Expected kind of Notebook, got #{notebook.class}", caller
+      elsif !notebook.respond_to? 'guid'
+        raise NoMethodError, "#{notebook.class} do not has method: guid", caller
       end
+      @notebook = notebook
+      @auth_store = auth_store
     end
 
     # content size
@@ -164,22 +167,28 @@ module Log4ever
       "<div style=\"font-family: Courier New\">" + text + "</div></en-note>"
     end
 
+    # get note content text
+    def content
+      return @content_ unless @content_.nil?
+      @note.nil? and get
+      @content_ = !@note.nil? && !@note.guid.nil? ? @auth_store.note_store.getNoteContent(@auth_store.auth_token, @note.guid) : ""
+    end
+
+    # get note content xml object
+    def content_xml
+      return @content_xml unless @content_xml.nil?
+      @content_xml = Nokogiri::XML(content)
+    end
+
     # create note
     def create
       @auth_store.note_store.createNote(@auth_store.auth_token, createNote)
-      clear
+      @note = nil
     end
 
     # update note
     def update
       @auth_store.note_store.updateNote(@auth_store.auth_token, updateNote)
-    end
-
-    # clear note object
-    def clear
-      @params = {}
-      @note = @content_ = @content_xml = nil
-      initialize(@notebook)
     end
 
     # get latest note object
@@ -198,12 +207,6 @@ module Log4ever
         @note = note_list.notes[0]
       end
       @note
-    end
-
-    # get latest note object(newest object)
-    def get!
-      clear
-      get
     end
 
     # create note object
@@ -226,24 +229,6 @@ module Log4ever
       time = get.created.to_s
       ut = time.slice(0, time.length - 3)
       Time.at(ut.to_f)
-    end
-
-    # get note content text
-    def content
-      return @content_ unless @content_.nil?
-      @note.nil? and get
-      @content_ = !@note.nil? && !@note.guid.nil? ? @auth_store.note_store.getNoteContent(@auth_store.auth_token, @note.guid) : ""
-    end
-
-    # get note content xml object
-    def content_xml
-      return @content_xml unless @content_xml.nil?
-      @content_xml = Nokogiri::XML(content)
-    end
-
-    # clear note object
-    def clear
-      @note = nil
     end
   end
 
@@ -269,18 +254,6 @@ module Log4ever
         tag_obj = to_obj(tag) || create(tag)
         tag_obj.guid
       end
-    end
-
-    # get newest tag objects
-    def get!
-      clear
-      get
-    end
-
-    # clear note object
-    def clear
-      @tags = nil
-      @tag_guids = nil
     end
 
     private
