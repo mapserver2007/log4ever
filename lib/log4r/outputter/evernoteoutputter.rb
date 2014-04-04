@@ -22,15 +22,6 @@ module Log4r
       set_shift_age(hash) # for rolling
     end
 
-    # synchronize note
-    # def sync
-    #   @note = @evernote.note(@notebook)
-    #   @tag = @evernote.tag(@note)
-    #   @tag.names = @tags
-    #   set_maxsize(@hash) # for rolling
-    #   set_shift_age(@hash) # for rolling
-    # end
-
     # validation of evernote parameters
     def validate(hash)
       @is_sandbox = hash[:sandbox] || hash['sandbox'] || false
@@ -47,7 +38,6 @@ module Log4r
 
     # write log
     def write(content)
-      # sync
       if note_size_requires_roll? || time_requires_roll? || different_tag?
         create_log(content)
       else
@@ -58,7 +48,6 @@ module Log4r
     private
     # write log to note
     def create_log(content)
-      # @note.clear
       @note.title = to_utf8(@name) + " - " + Time.now.strftime("%Y-%m-%d %H:%M:%S")
       @note.tags = @tag.get
       @note.content = to_utf8(content)
@@ -76,7 +65,7 @@ module Log4r
 
     # more expensive, only for startup
     def note_size_requires_roll?
-      @note.size == 0 || (@maxsize > 0 && @note.size >= @maxsize)
+      @note.size == 0 || (@maxsize > 0 && @note.size > @maxsize)
     end
 
     # whether or not to rotate

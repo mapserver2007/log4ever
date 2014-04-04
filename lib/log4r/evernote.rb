@@ -79,14 +79,7 @@ module Log4ever
         end
       end
       # create new notebook if notebook is nil
-      create(notebook_name, stack_name) if @notebook.nil?
-      @notebook
-    end
-
-    # get newest notebook
-    def get!(notebook_name, stack_name = nil)
-      clear
-      get(notebook_name, stack_name)
+      @notebook || create(notebook_name, stack_name)
     end
 
     # create notebook
@@ -115,8 +108,6 @@ module Log4ever
   end
 
   class Note
-    XML_TEMPLATE_BYTE = 237
-
     def initialize(notebook, auth_store)
       return unless @params.nil? || @params.empty?
       @params = {}
@@ -131,7 +122,7 @@ module Log4ever
 
     # content size
     def size
-      content.bytesize > 0 ? content.bytesize - XML_TEMPLATE_BYTE : 0
+      content.bytesize
     end
 
     # note guid
@@ -183,7 +174,7 @@ module Log4ever
     # create note
     def create
       @auth_store.note_store.createNote(@auth_store.auth_token, createNote)
-      @note = nil
+      clear
     end
 
     # update note
@@ -229,6 +220,11 @@ module Log4ever
       time = get.created.to_s
       ut = time.slice(0, time.length - 3)
       Time.at(ut.to_f)
+    end
+
+    # clear
+    def clear
+      @note = @content_ = @content_xml = nil
     end
   end
 
