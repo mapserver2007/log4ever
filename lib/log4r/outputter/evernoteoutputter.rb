@@ -18,8 +18,9 @@ module Log4r
       @note = evernote.note(@notebook)
       @tag = evernote.tag(@note)
       @tag.names = @tags
-      set_maxsize(hash) # for rolling
+      set_maxsize(hash)   # for rolling
       set_shift_age(hash) # for rolling
+      @hash = hash
     end
 
     # validation of evernote parameters
@@ -36,10 +37,17 @@ module Log4r
 
     def canonical_log(logevent); super end
 
+    # sync
+    def sync_note
+      @note.get!
+      update_maxtime(@hash) # update rolling status
+    end
+
     # write log
     def write(content)
       if note_size_requires_roll? || time_requires_roll? || different_tag?
         create_log(content)
+        sync_note
       else
         update_log(content)
       end
@@ -135,6 +143,8 @@ module Log4r
         end
       end
     end
+
+    alias_method :update_maxtime, :set_shift_age
 
     # encode for evernote internal charset
     # convert character encoding to UTF-8 from Shift_JIS or EUC-JP

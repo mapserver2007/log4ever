@@ -174,7 +174,6 @@ module Log4ever
     # create note
     def create
       @auth_store.note_store.createNote(@auth_store.auth_token, createNote)
-      clear
     end
 
     # update note
@@ -198,6 +197,11 @@ module Log4ever
         @note = note_list.notes[0]
       end
       @note
+    end
+
+    # force get latest note object
+    def get!
+      clear and get
     end
 
     # create note object
