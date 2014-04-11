@@ -46,9 +46,9 @@ describe Log4ever, 'が実行する処理' do
       @note = @evernote.note(notebook_obj)
       write_log = @note.content_xml.children[1].children.reverse[0].text
       if /\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s.*?\[.*?\]:\s(.*)/ =~ write_log
-        log_content.should == $1.strip
+        expect(log_content).to eq($1.strip)
       else
-        "".should be_nil
+        expect("").to eq(nil) # absolutely failure.
       end
     end
   end
@@ -56,53 +56,54 @@ describe Log4ever, 'が実行する処理' do
   describe 'Log4rの初期化処理(正常系)' do
     it 'パラメータのチェックでエラーが出ないこと' do
       logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params)
-      logger.name.should == LOGGER_NAME
+      expect(logger.name).to eq(LOGGER_NAME)
     end
 
     it 'XMLから読み込んだパラメータのチェックでエラーが出ないこと' do
-      Log4r::Configurator.load_xml_file(@config_xml).should_not be_nil
+      # Log4r::Configurator.load_xml_file(@config_xml).should_not be_nil
+      expect(Log4r::Configurator.load_xml_file(@config_xml)).to_not be_nil
     end
   end
 
   describe 'Log4rの初期化処理(異常系)' do
     it "sandboxパラメータのチェックでエラーが出ること" do
-      proc {
+      expect {
         logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
           :sandbox => "aaa"
         ))
-      }.should raise_error(ArgumentError)
+      }.to raise_error(ArgumentError)
     end
 
     it "auth_token必須パラメータのチェックでエラーが出ること" do
-      proc {
+      expect {
         logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
           :auth_token => nil
         ))
-      }.should raise_error(ArgumentError)
+      }.to raise_error(ArgumentError)
     end
 
     it "notebook必須パラメータのチェックでエラーが出ること" do
-      proc {
+      expect {
         logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
           :notebook => nil
         ))
-      }.should raise_error(ArgumentError)
+      }.to raise_error(ArgumentError)
     end
 
     it "ログローテートサイズパラメータのチェックでエラーが出ること" do
-      proc {
+      expect {
         logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
           :maxsize => 0
         ))
-      }.should raise_error(TypeError)
+      }.to raise_error(TypeError)
     end
 
     it "ログローテート期間パラメータのチェックでエラーが出ること" do
-      proc {
+      expect {
         logger.outputters = Log4r::EvernoteOutputter.new(LOGGER_NAME, @params.merge(
           :shift_age => 4
         ))
-      }.should raise_error(TypeError)
+      }.to raise_error(TypeError)
     end
   end
 
@@ -112,7 +113,7 @@ describe Log4ever, 'が実行する処理' do
       notebook_name = Time.now.to_i.to_s
       notebook = @evernote.notebook
       obj = notebook.get(notebook_name, @params[:stack])
-      obj.name.should == notebook_name
+      expect(obj.name).to eq(notebook_name)
     end
 
     it 'ノートブックが存在しない場合、スタックが新規作成されること' do
@@ -120,14 +121,14 @@ describe Log4ever, 'が実行する処理' do
       notebook_name = Time.now.to_i.to_s
       notebook = @evernote.notebook
       obj = notebook.get(notebook_name, @params[:stack])
-      obj.stack.should == @params[:stack]
+      expect(obj.stack.should).to eq(@params[:stack])
     end
 
     it '指定したスタックオブジェクト(存在するスタック)を渡した場合、既存のスタックに属するノートブックが取得できること' do
       @evernote = Log4ever::Evernote.new(@params[:auth_token])
       @notebook = @evernote.notebook
       notebook_obj = @notebook.get(@params[:notebook], @params[:stack])
-      notebook_obj.guid.should_not be_nil
+      expect(notebook_obj.guid).to_not be_nil
     end
 
     it '指定したスタックオブジェクト(存在しないスタック)を渡した場合、スタックが新規作成されノートブックが取得できること' do
@@ -136,25 +137,25 @@ describe Log4ever, 'が実行する処理' do
       notebook_name = Time.now.to_i.to_s
       stack_name = Time.now.to_i.to_s
       notebook_obj = @notebook.get(notebook_name, stack_name)
-      notebook_obj.guid.should_not be_nil
+      expect(notebook_obj.guid).to_not be_nil
     end
 
     it '存在するノートブックと同名のノートブックは作成できないこと' do
-      proc {
+      expect {
         @evernote = Log4ever::Evernote.new(@params[:auth_token])
         @notebook = @evernote.notebook
         @notebook.create(@params[:notebook], @params[:stack])
-      }.should raise_error()
+      }.to raise_error()
     end
 
     it 'ノートブックの取得に失敗しかつ存在するノートブックと同名のノートブックが指定された場合、作成できないこと' do
-      proc {
+      expect {
         @evernote = Log4ever::Evernote.new(@params[:auth_token])
         @notebook = @evernote.notebook
         stack_name = Time.now.to_i.to_s
         notebook_obj = @notebook.create(@params[:notebook], stack_name)
         notebook_obj.should be_nil
-      }.should raise_error()
+      }.to raise_error()
     end
   end
 
@@ -167,7 +168,7 @@ describe Log4ever, 'が実行する処理' do
       @evernote = Log4ever::Evernote.new(@params[:auth_token])
       notebook = @evernote.notebook
       note = @evernote.note(notebook.get(@params[:notebook], @params[:stack]))
-      note.get.tagGuids[0].should_not be_empty
+      expect(note.get.tagGuids[0]).to_not be_empty
     end
 
     it '更新対象のノートのタグが増えた場合、新規ノートが作成されること' do
@@ -190,7 +191,7 @@ describe Log4ever, 'が実行する処理' do
       note = evernote.note(notebook.get(@params[:notebook], @params[:stack])).get
       guid_after = note.guid
 
-      guid_before.should_not == guid_after
+      expect(guid_before).to_not eq(guid_after)
     end
 
     it '更新対象のノートのタグが減った場合、新規ノートが作成されること' do
@@ -214,52 +215,52 @@ describe Log4ever, 'が実行する処理' do
       note = evernote.note(notebook.get(@params[:notebook], @params[:stack])).get
       guid_after = note.guid
 
-      guid_before.should_not == guid_after
+      expect(guid_before).to_not eq(guid_after)
     end
 
     it '期間単位でのログローテートを有効にしたとき、エラーが発生しないこと' do
-      proc {
+      expect {
         logger = Log4r::Logger.new(LOGGER_NAME)
         @params.delete(:maxsize)
         @params[:shift_age] = Log4ever::ShiftAge::DAILY
         evernoteOutputter = Log4r::EvernoteOutputter.new('evernote', @params)
         logger.outputters = evernoteOutputter
         logger.info("test1")
-      }.should_not raise_error()
+      }.to_not raise_error()
     end
 
     it 'スタックにUTF-8以外の文字列を指定した時、エラーが発生しないこと' do
-      proc {
+      expect {
         @params[:stack] = "\xA4\xA2\xA4\xA2\xA4\xA2"
         @params[:notebook] = Time.now.to_i.to_s
         logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
         logger.debug("test")
-      }.should_not raise_error()
+      }.to_not raise_error()
     end
 
     it 'ノートブックにUTF-8以外の文字列を指定した時、エラーが発生しないこと' do
-      proc {
+      expect {
         @params[:notebook] = "\xA4\xA2" + Time.now.to_i.to_s
         logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
         logger.debug("test")
-      }.should_not raise_error()
+      }.to_not raise_error()
     end
 
     it 'タグにUTF-8以外の文字列を指定した時、エラーが発生しないこと' do
-      proc {
+      expect {
         @params[:tags] = ['Log', "\x82\xA0\x82\xA0", "\xA4\xA2"]
         logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
         logger.debug("test")
-      }.should_not raise_error()
+      }.to_not raise_error()
     end
 
     it 'ノートにUTF-8以外の文字列を指定した時、エラーが発生しないこと' do
-      proc {
+      expect {
         logger = Log4r::Logger.new(LOGGER_NAME)
         logger.outputters = Log4r::EvernoteOutputter.new('evernote', @params)
         logger.debug("\x82\xA0") # Shift_JIS
         logger.debug("\xA4\xA2") # EUC-JP
-      }.should_not raise_error()
+      }.to_not raise_error()
     end
   end
 end
