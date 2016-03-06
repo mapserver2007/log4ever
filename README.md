@@ -77,6 +77,8 @@ Add testcase.
 Performance improvement.
 * 0.1.6
 Ruby2.1.0 support.
+* 0.1.7
+Ruby2.2.4 support.
 
 ## License
 Licensed under the MIT

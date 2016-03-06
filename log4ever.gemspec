@@ -11,9 +11,9 @@ Gem::Specification.new do |gem|
   gem.name          = "log4ever"
   gem.require_paths = ["lib"]
   gem.add_dependency 'log4r', '~> 1.1', '>= 1.1.10'
-  gem.add_dependency 'activesupport', '~> 4.0', '>= 4.0.4'
-  gem.add_dependency 'i18n', '~> 0.6', '>= 0.6.9'
+  gem.add_dependency 'activesupport', '~> 4.2', '>= 4.2.0'
+  gem.add_dependency 'i18n', '~> 0.7', '>= 0.7.0'
   gem.add_dependency 'evernote_oauth', '~> 0.2', '>= 0.2.3'
-  gem.version       = '0.1.6'
+  gem.version       = '0.1.7'
   gem.license       = 'MIT'
 end
