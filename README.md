@@ -76,9 +76,11 @@ Add testcase.
 * 0.1.5
 Performance improvement.
 * 0.1.6
-Ruby2.1.0 support.
+Ruby2.1 support.
 * 0.1.7
-Ruby2.2.4 support.
+Ruby2.2 support.
+* 0.1.8
+Ruby2.3 support.
 
 ## License
 Licensed under the MIT
