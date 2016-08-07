@@ -1,0 +1,15 @@
+sudo: required
+
+services:
+  - docker
+
+# To avoid unnecessary setting because force bundle install by Gemfile.
+# Language can be anything if other than the ruby
+language: php
+
+script:
+  - docker run -e auth_token=$auth_token mapserver2007/log4ever rspec
+
+env:
+  global:
+    secure: "IToe6m7IHrRkmaOrV00AGZXKzBi0tG8Ax2+B6Bj0u4bzIzrTufwZeJPG2YaaABcKg/D/ldhcEeQeqWj21L6es0Dz5IebbBalVM/D/1Hu/30VthdfhvnlNbPnVHNQapPk5cZSRUgDKJIMNZ/+/oPs6efkN3PFW3aM5sVaA5OWgSg="
