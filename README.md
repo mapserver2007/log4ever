@@ -1,4 +1,5 @@
 # log4ever
+[![Build Status](https://travis-ci.org/mapserver2007/log4ever.svg?branch=master)](https://travis-ci.org/mapserver2007/log4ever)
 
 log4ever is simple logger for evernote. It is available as an extension of [log4r](http://log4r.rubyforge.org/).
 ***
